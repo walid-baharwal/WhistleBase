@@ -2,26 +2,22 @@ import mongoose, { Schema, Document } from "mongoose";
 import bcrypt from "bcryptjs";
 
 export interface User extends Document {
-    firstName: string;
-    lastName: string;
+    first_name: string;
+    last_name: string;
     email: string;
-    Phone: string;
-    company: string;
     password: string;
-    verificationCode: string;
-    verificationCodeExpiry: Date;
-    isVerified: boolean;
+    email_verified_at?: Date;
     isPasswordCorrect: (password: string) => Promise<boolean>;
 }
 
 const userSchema: Schema<User> = new Schema(
     {
-        firstName: {
+        first_name: {
             type: String,
             required: [true, "First name is required"],
             trim: true,
         },
-        lastName: {
+        last_name: {
             type: String,
             required: [true, "Last name is required"],
             trim: true,
@@ -34,32 +30,13 @@ const userSchema: Schema<User> = new Schema(
             trim: true,
             match: [/.+\@.+\..+/, "Please use a valid email address"],
         },
-        Phone: {
-            type: String,
-            required: [true, "Phone number is required"],
-            unique: true,
-            trim: true,
-        },
-        company: {
-            type: String,
-            required: [true, "Company name is required"],
-            trim: true,
-        },
         password: {
             type: String,
             required: [true, "Password is required"],
         },
-        verificationCode: {
-            type: String,
-            required: [true, "Verification key is required"],
-        },
-        verificationCodeExpiry: {
+        email_verified_at: {
             type: Date,
-            required: [true, "Verification key Expiry is required"],
-        },
-        isVerified: {
-            type: Boolean,
-            default: false,
+            default: null,
         },
     },
     { timestamps: true }
