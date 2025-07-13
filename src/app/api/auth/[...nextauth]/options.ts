@@ -2,74 +2,100 @@ import dbConnect from "@/lib/dbConnect";
 import UserModel from "@/models/user.model";
 import Credentials from "next-auth/providers/credentials";
 import { NextAuthOptions } from "next-auth";
+import OrganizationMemberModel from "@/models/organization_member.model";
+import OrganizationModel from "@/models/organization.model";
 
 export const authOptions: NextAuthOptions = {
-    
-providers: [
+  providers: [
     Credentials({
-    id: "credentials",
-    name: "Credentials",
-    credentials: {
+      id: "credentials",
+      name: "Credentials",
+      credentials: {
         email: { label: "Email" },
         password: { label: "Password", type: "password" },
-    },
+      },
 
-    async authorize(credentials: any): Promise<any> {
-       await dbConnect();
+      async authorize(credentials: Record<string, string> | undefined) {
+        await dbConnect();
         try {
-        const user = await UserModel.findOne({
-            $or: [{ email: credentials.identifier }, { username: credentials.identifier }],
-        });
-        if (!user) {
-            throw new Error("User with this credential not found");
-        }
-        if (!user.isVerified) {
-            throw new Error("Please verify your account before logging in");
-        }
-        const isPasswordCorrect = await user.isPasswordCorrect(credentials.password);
-        if (isPasswordCorrect) {
-            return user;
-        } else {
-            throw new Error("Please login using correct credentials");
-        }
-        } catch (error: any) {
-        throw new Error(error.message);
-        }
-    },
-    }),
-],
+          const user = await UserModel.findOne({
+            email: credentials?.identifier,
+          });
 
-callbacks: {
+          if (!user) {
+            throw new Error("User with this credential not found");
+          }
+          if (!user.email_verified_at) {
+            throw new Error("Please verify your account before logging in");
+          }
+
+          const isPasswordCorrect = await user.isPasswordCorrect(credentials?.password || "");
+          if (isPasswordCorrect) {
+            OrganizationMemberModel.findOne({ userId: user._id });
+
+            const orgMember = await OrganizationMemberModel.findOne({ userId: user._id });
+            const organization = await OrganizationModel.findOne({
+              _id: orgMember?.organization_id,
+            });
+
+            return {
+              id: (user._id as string).toString(),
+              _id: (user._id as string).toString(),
+              email: user.email,
+              first_name: user.first_name,
+              last_name: user.last_name,
+              email_verified_at: user.email_verified_at,
+              organization_id: organization?._id?.toString(),
+              organization_name: organization?.name,
+              owner: organization?.owner?.toString(),
+              country: organization?.country,
+            };
+          } else {
+            throw new Error("Please login using correct credentials");
+          }
+        } catch (error: unknown) {
+          throw new Error((error as Error).message);
+        }
+      },
+    }),
+  ],
+
+  callbacks: {
     async jwt({ token, user }) {
-    if (user) {
+      if (user) {
         token._id = user._id?.toString();
-        token.isVerified = user.isVerified;
-        token.firstName = user.firstName;
-        token.lastName = user.lastName;
+        token.email_verified_at = user.email_verified_at;
+        token.first_name = user.first_name;
+        token.last_name = user.last_name;
         token.email = user.email;
-        token.Phone = user.Phone;
-        token.company = user.company;
-    }
-    return token;
-},
-async session({ session, token }) {
-    if (token) {
-        session.user._id = token._id;
-        session.user.isVerified = token.isVerified;
-        session.user.firstName = token.firstName;
-        session.user.lastName = token.lastName;
-        session.user.email = token.email;
-        session.user.Phone = token.Phone;
-        session.user.company = token.company;
-    }
-    return session;
+        token.organization_id = user.organization_id;
+        token.organization_name = user.organization_name;
+        token.owner = user.owner;
+        token.country = user.country;
+      }
+      return token;
     },
-},
-session: {
+    async session({ session, token }) {
+      if (token) {
+        session.user._id = token._id;
+        session.user.email_verified_at = token.email_verified_at;
+        session.user.first_name = token.first_name;
+        session.user.last_name = token.last_name;
+        session.user.email = token.email;
+        session.user.organization_id = token.organization_id;
+        session.user.organization_name = token.organization_name;
+        session.user.owner = token.owner;
+        session.user.country = token.country;
+      }
+      return session;
+    },
+  },
+  session: {
     strategy: "jwt",
-},
-secret: process.env.NEXTAUTH_SECRET,
-pages: {
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+  pages: {
     signIn: "/sign-in",
-},
+    signOut: "/sign-in",
+  },
 };

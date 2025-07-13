@@ -37,9 +37,9 @@ const AccessCode = () => {
       router.push('/submit-report');
       toast.success("Access code verified");
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error("Verification Failed", {
-        description: error.message || "Could not verify access code",
+        description: (error as Error).message || "Could not verify access code",
       });
     } finally {
       setIsSubmitting(false);

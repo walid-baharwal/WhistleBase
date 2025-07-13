@@ -19,16 +19,13 @@ const subscriptionSchema: Schema<Subscription> = new Schema(
         plan_id: {
             type: Schema.Types.ObjectId,
             ref: "Plan",
-            required: true,
         },
         stripe_subscription_id: {
             type: String,
-            required: true,
             unique: true,
         },
         type: {
             type: String,
-            required: true,
             enum: ["TRIAL", "PAID"],
         },
         started_at: {

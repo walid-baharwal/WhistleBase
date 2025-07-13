@@ -1,0 +1,51 @@
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/options";
+import dbConnect from "@/lib/dbConnect";
+import { initTRPC, TRPCError } from "@trpc/server";
+import superjson from "superjson";
+import { Session } from "next-auth";
+
+interface CreateContextOptions {
+  session: Session | null;
+}
+
+const createInnerTRPCContext = (opts: CreateContextOptions) => {
+  return {
+    session: opts.session,
+  };
+};
+
+export const createTRPCContext = async () => {
+  // Connect to database
+  await dbConnect();
+  
+  // Get session from NextAuth
+  const session = await getServerSession(authOptions);
+  
+  return createInnerTRPCContext({
+    session,
+  });
+};
+
+const t = initTRPC.context<typeof createTRPCContext>().create({
+  transformer: superjson,
+  errorFormatter({ shape }) {
+    return shape;
+  },
+});
+
+export const createTRPCRouter = t.router;
+export const publicProcedure = t.procedure;
+
+const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
+  if (!ctx.session || !ctx.session.user) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+  return next({
+    ctx: {
+      session: { ...ctx.session, user: ctx.session.user },
+    },
+  });
+});
+
+export const protectedProcedure = t.procedure.use(enforceUserIsAuthed); 

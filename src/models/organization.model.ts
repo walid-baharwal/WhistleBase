@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface Organization extends Document {
     name: string;
     owner: mongoose.Types.ObjectId;
+    country: string;
 }
 
 const organizationSchema: Schema<Organization> = new Schema(
@@ -17,6 +18,11 @@ const organizationSchema: Schema<Organization> = new Schema(
             ref: "User",
             required: true,
         },
+        country: {
+            type: String,
+            required: true,
+            trim: true,
+        }
     },
     { timestamps: true }
 );

@@ -21,14 +21,14 @@ const organizationMemberSchema: Schema<OrganizationMember> = new Schema(
         role: {
             type: String,
             required: true,
-            enum: ["admin", "member", "viewer"],
-            default: "member",
+            enum: ["ADMIN", "EDITOR", "VIEWER"],
+            default: "VIEWER",
         },
     },
     { timestamps: true }
 );
 
-// Compound index to ensure unique user-organization combinations
+
 organizationMemberSchema.index({ user_id: 1, organization_id: 1 }, { unique: true });
 
 const OrganizationMemberModel =
