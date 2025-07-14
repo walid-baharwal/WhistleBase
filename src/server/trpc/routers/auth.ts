@@ -144,10 +144,9 @@ export const authRouter = createTRPCRouter({
       const trialSubscription = new SubscriptionModel({
         plan_id: null,
         organization_id: newOrganization._id,
-        stripe_subscription_id: null,
         type: "TRIAL",
         started_at: new Date(),
-        ends_at: new Date(new Date().setMonth(new Date().getMonth() + 3)),
+        ends_at: new Date(new Date().setDate(new Date().getDate() + 14)), // 14 days trial
       });
 
       await Promise.all([
