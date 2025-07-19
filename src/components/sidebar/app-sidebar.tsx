@@ -35,13 +35,13 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
+      url: "/dashboard",
       icon: SquareTerminal,
       isActive: true,
     },
     {
       title: " Analytics",
-      url: "#",
+      url: "/dashboard/analytics",
       icon: PieChart,
       isActive: false,
     },

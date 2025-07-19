@@ -16,12 +16,10 @@ const createInnerTRPCContext = (opts: CreateContextOptions) => {
 };
 
 export const createTRPCContext = async () => {
-  // Connect to database
   await dbConnect();
-  
-  // Get session from NextAuth
+
   const session = await getServerSession(authOptions);
-  
+
   return createInnerTRPCContext({
     session,
   });
@@ -48,4 +46,4 @@ const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
   });
 });
 
-export const protectedProcedure = t.procedure.use(enforceUserIsAuthed); 
+export const protectedProcedure = t.procedure.use(enforceUserIsAuthed);

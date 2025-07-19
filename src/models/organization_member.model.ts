@@ -4,6 +4,9 @@ export interface OrganizationMember extends Document {
     user_id: mongoose.Types.ObjectId;
     organization_id: mongoose.Types.ObjectId;
     role: string;
+    private_key: string;
+    salt: string;
+    nonce: string;
 }
 
 const organizationMemberSchema: Schema<OrganizationMember> = new Schema(
@@ -23,6 +26,21 @@ const organizationMemberSchema: Schema<OrganizationMember> = new Schema(
             required: true,
             enum: ["ADMIN", "EDITOR", "VIEWER"],
             default: "VIEWER",
+        },
+        private_key: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+        salt: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+        nonce: {
+            type: String,
+            required: true,
+            trim: true,
         },
     },
     { timestamps: true }

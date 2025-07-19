@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/sidebar"
 import { User } from "next-auth"
 import { signOut } from "next-auth/react"
+import { clearEncryptedKeyFromIndexedDB } from "@/utils/index-db/indexed-db-keys"
 
 export function NavUser({
   user,
@@ -37,6 +38,11 @@ export function NavUser({
   user?: User
 }) {
   const { isMobile } = useSidebar()
+
+  const handleSignOut = async() => {
+    signOut({ callbackUrl: window.location.origin + '/' })
+    await clearEncryptedKeyFromIndexedDB(); 
+  }
 
   return (
     <SidebarMenu>
@@ -82,7 +88,7 @@ export function NavUser({
                 <Sparkles />
                 Upgrade to Pro
               </DropdownMenuItem>
-            </DropdownMenuGroup>
+              </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
@@ -99,7 +105,7 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => signOut({ callbackUrl: window.location.origin + '/sign-in' })}>
+            <DropdownMenuItem onClick={handleSignOut}>
               <LogOut />
               Log out
             </DropdownMenuItem>

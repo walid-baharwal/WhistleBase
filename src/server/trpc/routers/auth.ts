@@ -104,10 +104,23 @@ export const authRouter = createTRPCRouter({
       organizationStepSchema.extend({
         email: z.string().email(),
         verification_code: z.string(),
+        encryptedPrivateKey: z.string(),
+        salt: z.string(),
+        nonce: z.string(),
+        publicKey: z.instanceof(Uint8Array<ArrayBufferLike>),//unit8array<ArrayBufferLike>
       })
     )
     .mutation(async ({ input }) => {
-      const { email, organization_name, country, verification_code } = input;
+      const {
+        email,
+        organization_name,
+        country,
+        verification_code,
+        encryptedPrivateKey,
+        salt,
+        nonce,
+        publicKey,
+      } = input;
 
       const verification = await EmailVerificationModel.findOne({
         token: verification_code,
@@ -133,12 +146,16 @@ export const authRouter = createTRPCRouter({
         name: organization_name,
         owner: user._id,
         country,
+        public_key: publicKey,
       });
 
       const orgMember = new OrganizationMemberModel({
         user_id: user._id,
         organization_id: newOrganization._id,
         role: "ADMIN",
+        private_key: encryptedPrivateKey,
+        salt,
+        nonce,
       });
 
       const trialSubscription = new SubscriptionModel({
@@ -165,7 +182,7 @@ export const authRouter = createTRPCRouter({
           email_verified_at: user.email_verified_at,
           first_name: user.first_name,
           last_name: user.last_name,
-        }
+        },
       };
     }),
 });

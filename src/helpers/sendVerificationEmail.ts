@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import nodemailer from "nodemailer";
 
 interface EmailResponse {
   success: boolean;
@@ -13,7 +13,7 @@ export const sendVerificationEmail = async (
   try {
     // Validate environment variables
     if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-      console.error('Gmail credentials not configured in environment variables');
+      console.error("Gmail credentials not configured in environment variables");
       return {
         success: false,
         message: "Email service not configured. Please contact support.",
@@ -22,7 +22,7 @@ export const sendVerificationEmail = async (
 
     // Create transporter for Gmail SMTP
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      service: "gmail",
       auth: {
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_APP_PASSWORD,
@@ -31,7 +31,7 @@ export const sendVerificationEmail = async (
 
     // Verify transporter configuration
     await transporter.verify();
-    console.log('SMTP server connection verified');
+    console.log("SMTP server connection verified");
 
     // Email HTML template
     const htmlTemplate = `
@@ -86,8 +86,8 @@ export const sendVerificationEmail = async (
     // Email options
     const mailOptions = {
       from: {
-        name: 'Whistle - Email Verification',
-        address: process.env.GMAIL_USER || '',
+        name: "Whistle - Email Verification",
+        address: process.env.GMAIL_USER || "",
       },
       to: email,
       subject: `Verify Your Email - Code: ${verificationCode}`,
@@ -96,41 +96,40 @@ export const sendVerificationEmail = async (
     };
 
     // Send email
-    const info = await transporter.sendMail(mailOptions);
-    
-    console.log('Verification email sent successfully:', info.messageId);
+    await transporter.sendMail(mailOptions);
+
     console.log(`Verification code sent to ${email}: ${verificationCode}`);
-    
+
     return {
       success: true,
       message: "Verification email sent successfully",
     };
   } catch (error: unknown) {
     console.error("Error sending verification email:", error);
-    
+
     // Handle specific error types
     const errorObj = error as { code?: string; message?: string };
-    
-    if (errorObj.code === 'EAUTH') {
+
+    if (errorObj.code === "EAUTH") {
       return {
         success: false,
         message: "Email authentication failed. Please check email configuration.",
       };
-    } else if (errorObj.code === 'ECONNECTION') {
+    } else if (errorObj.code === "ECONNECTION") {
       return {
         success: false,
         message: "Unable to connect to email server. Please try again later.",
       };
-    } else if (errorObj.code === 'EMESSAGE') {
+    } else if (errorObj.code === "EMESSAGE") {
       return {
         success: false,
         message: "Invalid email format or content. Please try again.",
       };
     }
-    
+
     return {
       success: false,
       message: "Failed to send verification email. Please try again.",
     };
   }
-}; 
+};

@@ -12,6 +12,10 @@ declare module "next-auth" {
         organization_name?: string;
         owner?: string; 
         country?: string;
+        encryptedPrivateKey?: string;
+        salt?: string;
+        nonce?: string;
+        publicKey?: string;
     }
 
     interface Session {
@@ -25,6 +29,11 @@ declare module "next-auth" {
             organization_name?: string;
             owner?: string;
             country?: string;
+            aesKey?: string;
+            encryptedPrivateKey?: string;
+            salt?: string;
+            nonce?: string;
+            publicKey?: string;
         } & DefaultSession["user"];
     }
 }
@@ -40,5 +49,10 @@ declare module "next-auth/jwt" {
         organization_name?: string;
         owner?: string;
         country?: string;
+        aesKey?: string;
+        encryptedPrivateKey?: string;
+        salt?: string;
+        nonce?: string;
+        publicKey?: string;
     }
 }

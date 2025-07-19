@@ -53,6 +53,8 @@ export default function RootLayout({
           >
             <AuthProvider>
 
+ 
+
             {children}
             <Toaster richColors position={"top-right"} />
             </AuthProvider>

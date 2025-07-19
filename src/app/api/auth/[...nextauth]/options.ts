@@ -4,6 +4,7 @@ import Credentials from "next-auth/providers/credentials";
 import { NextAuthOptions } from "next-auth";
 import OrganizationMemberModel from "@/models/organization_member.model";
 import OrganizationModel from "@/models/organization.model";
+import { generateSessionKey } from "@/utils/session/generate-session";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -11,7 +12,7 @@ export const authOptions: NextAuthOptions = {
       id: "credentials",
       name: "Credentials",
       credentials: {
-        email: { label: "Email" },
+        identifier: { label: "Email" },
         password: { label: "Password", type: "password" },
       },
 
@@ -31,9 +32,7 @@ export const authOptions: NextAuthOptions = {
 
           const isPasswordCorrect = await user.isPasswordCorrect(credentials?.password || "");
           if (isPasswordCorrect) {
-            OrganizationMemberModel.findOne({ userId: user._id });
-
-            const orgMember = await OrganizationMemberModel.findOne({ userId: user._id });
+            const orgMember = await OrganizationMemberModel.findOne({ user_id: user._id });
             const organization = await OrganizationModel.findOne({
               _id: orgMember?.organization_id,
             });
@@ -49,6 +48,10 @@ export const authOptions: NextAuthOptions = {
               organization_name: organization?.name,
               owner: organization?.owner?.toString(),
               country: organization?.country,
+              encryptedPrivateKey: orgMember?.private_key,
+              salt: orgMember?.salt,
+              nonce: orgMember?.nonce,
+              publicKey: organization?.public_key,
             };
           } else {
             throw new Error("Please login using correct credentials");
@@ -63,6 +66,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        console.log("user", user);
         token._id = user._id?.toString();
         token.email_verified_at = user.email_verified_at;
         token.first_name = user.first_name;
@@ -72,6 +76,14 @@ export const authOptions: NextAuthOptions = {
         token.organization_name = user.organization_name;
         token.owner = user.owner;
         token.country = user.country;
+        token.encryptedPrivateKey = user.encryptedPrivateKey;
+        token.salt = user.salt;
+        token.nonce = user.nonce;
+        token.publicKey = user.publicKey;
+
+        if (!token.aesKey) {
+          token.aesKey = await generateSessionKey();
+        }
       }
       return token;
     },
@@ -86,6 +98,11 @@ export const authOptions: NextAuthOptions = {
         session.user.organization_name = token.organization_name;
         session.user.owner = token.owner;
         session.user.country = token.country;
+        session.user.aesKey = token.aesKey;
+        session.user.encryptedPrivateKey = token.encryptedPrivateKey;
+        session.user.salt = token.salt;
+        session.user.nonce = token.nonce;
+        session.user.publicKey = token.publicKey;
       }
       return session;
     },
@@ -95,7 +112,7 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
-    signIn: "/sign-in",
-    signOut: "/sign-in",
+    signIn: "/auth/sign-in",
+    signOut: "/auth/sign-in",
   },
 };

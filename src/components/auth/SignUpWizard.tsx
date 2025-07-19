@@ -36,14 +36,21 @@ import {
 import Link from "next/link";
 import { countries } from "@/utils/constants";
 import { ScrollArea } from "../ui/scroll-area";
+import { initSodium } from "@/lib/sodium";
+import { encryptPrivateKeyWithPassword } from "@/utils/sodium/encrypt-p-key-with-password";
 
 interface SignupWizardProps {
-  onSignupSuccess?: (data: { email: string; password: string }) => Promise<void>;
+  onSignupSuccess?: (data: {
+    email: string;
+    password: string;
+    privateKey: Uint8Array<ArrayBufferLike>;
+  }) => Promise<void>;
 }
 
 export function SignupWizard({ onSignupSuccess }: SignupWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [privateKey, setPrivateKey] = useState<Uint8Array<ArrayBufferLike> | null>(null);
   const [formData, setFormData] = useState({
     email: "",
     first_name: "",
@@ -110,9 +117,8 @@ export function SignupWizard({ onSignupSuccess }: SignupWizardProps) {
         await onSignupSuccess?.({
           email: formData.email,
           password: formData.password,
+          privateKey: privateKey!,
         });
-
-      
       } catch (error) {
         console.error("Auto-login failed:", error);
       } finally {
@@ -153,13 +159,24 @@ export function SignupWizard({ onSignupSuccess }: SignupWizardProps) {
     });
   };
 
-  const onOrganizationSubmit = (data: OrganizationStepData) => {
+  const onOrganizationSubmit = async (data: OrganizationStepData) => {
     setIsSubmitting(true);
+    const sodium = await initSodium();
+    const { publicKey, privateKey } = sodium.crypto_box_keypair();
+    const { encryptedPrivateKey, salt, nonce } = await encryptPrivateKeyWithPassword(
+      formData.password,
+      privateKey
+    );
+    setPrivateKey(privateKey);
     const completeData = {
       email: formData.email,
       organization_name: data.organization_name,
       country: data.country,
       verification_code: formData.verification_code,
+      encryptedPrivateKey,
+      salt,
+      nonce,
+      publicKey,
     };
     signupMutation.mutate(completeData);
   };
@@ -411,11 +428,11 @@ export function SignupWizard({ onSignupSuccess }: SignupWizardProps) {
                           </FormControl>
                           <SelectContent>
                             <ScrollArea className="max-h-60">
-                            {countries?.map((country) => (
-                              <SelectItem key={country.value} value={country.value}>
-                                {country.label}
-                              </SelectItem>
-                            ))}
+                              {countries?.map((country) => (
+                                <SelectItem key={country.value} value={country.value}>
+                                  {country.label}
+                                </SelectItem>
+                              ))}
                             </ScrollArea>
                           </SelectContent>
                         </Select>
@@ -444,7 +461,7 @@ export function SignupWizard({ onSignupSuccess }: SignupWizardProps) {
             )}
             <div className="mt-6 text-center text-sm">
               Already have an account?{" "}
-              <Link href="/sign-in" className="underline underline-offset-4">
+              <Link href="/auth/sign-in" className="underline underline-offset-4">
                 Sign in
               </Link>
             </div>
