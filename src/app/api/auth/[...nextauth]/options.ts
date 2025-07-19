@@ -54,7 +54,7 @@ export const authOptions: NextAuthOptions = {
               publicKey: organization?.public_key,
             };
           } else {
-            throw new Error("Please login using correct credentials");
+            throw new Error("Invalid credentials");
           }
         } catch (error: unknown) {
           throw new Error((error as Error).message);
@@ -66,7 +66,6 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        console.log("user", user);
         token._id = user._id?.toString();
         token.email_verified_at = user.email_verified_at;
         token.first_name = user.first_name;

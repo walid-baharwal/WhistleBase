@@ -2,7 +2,6 @@
 
 import { LoginForm } from "@/components/auth/LoginForm";
 import { getSession, signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -19,10 +18,10 @@ export interface SignInResponseWithKeys extends SignInResponse {
 
 const SignIn = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const router = useRouter();
 
   const handleSubmit = async (data: z.infer<typeof signInSchema>) => {
     setIsSubmitting(true);
+    
     try {
       const result = (await signIn("credentials", {
         redirect: false,
@@ -31,32 +30,70 @@ const SignIn = () => {
       })) as SignInResponseWithKeys;
 
       if (result?.error) {
-        toast.error("Login Failed:", {
-          description: result.error,
-        });
-        return;
+        throw new Error(result.error === "CredentialsSignin" 
+          ? "Invalid credentials. Please check your email/username and password."
+          : result.error);
       }
 
-      if (result?.url) {
-        const session = await getSession();
-        if (!session?.user) return;
-        const privateKey = await decryptPrivateKeyFromPassword(
-          data.password,
-          session?.user?.encryptedPrivateKey || "",
-          session?.user?.salt || "",
-          session?.user?.nonce || ""
-        );
-
-        await encryptAndSaveToIndexedDB({ privateKey });
-
-        router.replace("/dashboard");
-      } else {
-        toast.error("Unexpected error occurred. Please try again.");
+      if (!result?.url) {
+        throw new Error("Login process incomplete. Please try again.");
       }
+
+      let session = await getSession();
+      if (!session?.user) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        session = await getSession();
+      }
+
+      if (!session?.user) {
+        throw new Error("User session not found. Please try logging in again.");
+      }
+
+      const { encryptedPrivateKey, salt, nonce } = session.user;
+      if (!encryptedPrivateKey || !salt || !nonce) {
+        throw new Error("Your account is missing required security data. Please contact support.");
+      }
+
+      const privateKey = await decryptPrivateKeyFromPassword(
+        data.password,
+        encryptedPrivateKey,
+        salt,
+        nonce
+      );
+      
+      if (!privateKey) {
+        throw new Error("Unable to decrypt your private key. Please verify your password is correct.");
+      }
+
+      await encryptAndSaveToIndexedDB({ privateKey });
+
+      toast.success("Login successful");
+      
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 100);
+      
     } catch (error: unknown) {
-      toast.error("Sign In Failed:", {
-        description: (error as Error)?.message || "An unexpected error occurred.",
-      });
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
+      console.error("Sign in error:", error);
+      if(errorMessage.includes(" not found")) {
+        toast.error("User not found", {
+          description: "Please check your email/username and try again.",
+        });
+      } else if(errorMessage.includes("Invalid credentials")) {
+        toast.error("Invalid credentials", {
+          description: "Please check your email/username and password and try again.",
+        });
+      } else if (errorMessage.includes("verify your account")) {
+        toast.error("Please verify your account before logging in",{
+          description:"You have to re sign up with same email",
+          duration:6000,
+        });
+      } else {
+        toast.error("An unexpected error occurred", {
+          description: "Please try again later.",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }

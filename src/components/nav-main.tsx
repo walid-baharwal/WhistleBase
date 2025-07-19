@@ -27,14 +27,16 @@ export function NavMain({
       {/* <SidebarGroupLabel>Platform</SidebarGroupLabel> */}
       <SidebarMenu>
         {items.map((item) => {
-          const isActive = pathname === item.url || pathname.startsWith(item.url + "/");
+          const isActive = pathname === item.url || pathname.endsWith(item.url);
 
           return (
             <SidebarMenuItem key={item.title} className="mt-1">
               <Link href={item.url} className="w-full">
                 <SidebarMenuButton
                   tooltip={item.title}
-                  className={clsx(isActive && "bg-primary/90 text-white " )}
+                  className={clsx(
+                    isActive && "bg-primary/90 text-white hover:bg-primary/90 hover:text-white"
+                  )}
                 >
                   {item.icon && <item.icon className="h-4 w-4" />}
                   <span>{item.title}</span>

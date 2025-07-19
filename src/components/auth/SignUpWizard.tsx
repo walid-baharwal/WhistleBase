@@ -486,8 +486,8 @@ export function SignupWizard({ onSignupSuccess }: SignupWizardProps) {
           </CardContent>
         </Card>
 
-        <Card className="hidden lg:flex lg:w-1/2 rounded-l-none border-l-0">
-          <CardContent className="p-8 bg-primary/5 flex flex-col justify-center">
+        <Card className="hidden bg-primary/5 lg:flex lg:w-1/2 rounded-l-none border-l-0">
+          <CardContent className="p-8  flex flex-col justify-center">
             <div className="max-w-md mx-auto">
               <h3 className="text-2xl font-bold text-foreground mb-2">Try WhistleBase for free</h3>
               <p className="text-muted-foreground mb-8">
