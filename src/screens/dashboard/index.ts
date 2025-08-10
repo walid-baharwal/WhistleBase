@@ -1,4 +1,5 @@
 import DashboardOverview from "./overview/DashboardOverview";
+import ChannelScreen from "./channels/ChannelScreen";
+import FormCreatorScreen from "./forms/FormCreatorScreen";
 
-
-export { DashboardOverview };
+export { DashboardOverview, ChannelScreen, FormCreatorScreen };

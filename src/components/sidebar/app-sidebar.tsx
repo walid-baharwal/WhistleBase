@@ -53,7 +53,7 @@ const data = {
     },
     {
       title: "Channels",
-      url: "#",
+      url: "/dashboard/channels",
       icon: Bot,
       isActive: false,
     },

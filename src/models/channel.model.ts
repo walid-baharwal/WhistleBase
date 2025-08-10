@@ -1,31 +1,33 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-export interface Form extends Document {
-    logo?: string;
-    primary_color: string;
+export interface Channel extends Document {
     organization_id: mongoose.Types.ObjectId;
-    slug: string;
-    access_code: string;
     title: string;
     description: string;
+    slug: string;
+    access_code: string;
+    primary_color: string;
+    logo?: string;
     submission_message: string;
+    is_active: boolean;
 }
 
-const formSchema: Schema<Form> = new Schema(
+const channelSchema: Schema<Channel> = new Schema(
     {
-        logo: {
-            type: String,
-            default: null,
-        },
-        primary_color: {
-            type: String,
-            required: true,
-            default: "#000000",
-        },
         organization_id: {
             type: Schema.Types.ObjectId,
             ref: "Organization",
             required: true,
+        },
+        title: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+        description: {
+            type: String,
+            required: true,
+            trim: true,
         },
         slug: {
             type: String,
@@ -40,15 +42,19 @@ const formSchema: Schema<Form> = new Schema(
             unique: true,
             trim: true,
         },
-        title: {
-            type: String,
+        is_active: {
+            type: Boolean,
             required: true,
-            trim: true,
+            default: true,
         },
-        description: {
+        primary_color: {
             type: String,
             required: true,
-            trim: true,
+            default: "#000000",
+        },
+        logo: {
+            type: String,
+            default: null,
         },
         submission_message: {
             type: String,
@@ -59,8 +65,8 @@ const formSchema: Schema<Form> = new Schema(
     { timestamps: true }
 );
 
-const FormModel =
-    (mongoose.models.Form as mongoose.Model<Form>) || 
-    mongoose.model<Form>("Form", formSchema);
+const ChannelModel =
+    (mongoose.models.Channel as mongoose.Model<Channel>) || 
+    mongoose.model<Channel>("Channel", channelSchema);
 
-export default FormModel; 
+export default ChannelModel;
