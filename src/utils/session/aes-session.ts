@@ -1,12 +1,10 @@
 "use client";
-/**
- * Encrypts a Uint8Array with a base64-encoded AES key using AES-GCM.
- */
+
 export async function encryptWithSessionAESKey(
   plainData: Uint8Array,
   aesKeyRawBase64: string
 ): Promise<{ encryptedBase64: string; ivBase64: string }> {
-  const iv = crypto.getRandomValues(new Uint8Array(12)); // AES-GCM IV should be 12 bytes
+  const iv = crypto.getRandomValues(new Uint8Array(12));
 
   const aesKeyRaw = Uint8Array.from(atob(aesKeyRawBase64), (c) => c.charCodeAt(0));
   const aesKey = await crypto.subtle.importKey("raw", aesKeyRaw, { name: "AES-GCM" }, false, [
@@ -26,9 +24,6 @@ export async function encryptWithSessionAESKey(
   };
 }
 
-/**
- * Decrypts base64-encoded AES-GCM encrypted data.
- */
 export async function decryptWithSessionAESKey(
   encryptedBase64: string,
   ivBase64: string,
@@ -50,4 +45,3 @@ export async function decryptWithSessionAESKey(
 
   return new Uint8Array(decryptedBuffer);
 }
-

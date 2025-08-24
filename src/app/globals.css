@@ -165,3 +165,33 @@
     font-family: var(--font-sans);
   }
 }
+
+/* Dynamic primary color focus states for channel pages */
+.focus-primary input:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 1px var(--primary-color) !important;
+}
+
+.focus-primary textarea:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 1px var(--primary-color) !important;
+}
+
+.focus-primary select:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 1px var(--primary-color) !important;
+}
+
+/* Replace default shadows with primary color variations in case routes */
+.focus-primary input,
+.focus-primary textarea,
+.focus-primary select,
+.focus-primary button {
+  box-shadow: 0 1px 3px 0 color-mix(in srgb, var(--primary-color) 20%, transparent), 
+              0 1px 2px -1px color-mix(in srgb, var(--primary-color) 20%, transparent) !important;
+}
+
+.focus-primary button:hover {
+  box-shadow: 0 4px 6px -1px color-mix(in srgb, var(--primary-color) 30%, transparent), 
+              0 2px 4px -2px color-mix(in srgb, var(--primary-color) 30%, transparent) !important;
+}

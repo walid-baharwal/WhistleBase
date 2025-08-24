@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface Message extends Document {
     case_id: mongoose.Types.ObjectId;
     sender_type: "ANONYMOUS" | "ADMIN";
-    sender_id?: mongoose.Types.ObjectId;
+    sender_id?: mongoose.Types.ObjectId | null;
     message: string;
 }
 

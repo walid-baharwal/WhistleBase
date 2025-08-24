@@ -7,9 +7,8 @@ export interface Attachment extends Document {
     storage_key: string;
     mime_type: string;
     size: number;
-    access_scope: "public" | "org_only";
-    message_id?: mongoose.Types.ObjectId;
-    uploaded_by: mongoose.Types.ObjectId;
+    message_id?: mongoose.Types.ObjectId | null;
+    uploaded_by: mongoose.Types.ObjectId | null;
     uploaded_at: Date;
 }
 
@@ -45,12 +44,6 @@ const attachmentSchema: Schema<Attachment> = new Schema(
             required: true,
             min: 0,
         },
-        access_scope: {
-            type: String,
-            required: true,
-            enum: ["public", "org_only"],
-            default: "org_only",
-        },
         message_id: {
             type: Schema.Types.ObjectId,
             ref: "Message",
@@ -59,7 +52,7 @@ const attachmentSchema: Schema<Attachment> = new Schema(
         uploaded_by: {
             type: Schema.Types.ObjectId,
             ref: "User",
-            required: true,
+            default: null,
         },
         uploaded_at: {
             type: Date,

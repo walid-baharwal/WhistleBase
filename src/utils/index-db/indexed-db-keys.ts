@@ -15,8 +15,8 @@ export async function saveEncryptedKeyToIndexedDB(encryptedKey: string, iv: stri
     },
   });
 
-  await db.put(STORE_NAME, encryptedKey, "ek"); // encrypted key
-  await db.put(STORE_NAME, iv, "iv"); // initialization vector
+  await db.put(STORE_NAME, encryptedKey, "ek");
+  await db.put(STORE_NAME, iv, "iv");
 }
 
 export async function getEncryptedKeyFromIndexedDB(): Promise<{
@@ -24,8 +24,8 @@ export async function getEncryptedKeyFromIndexedDB(): Promise<{
   ivBase64: string;
 } | null> {
   const db = await openDB(DB_NAME, 1);
-  const encrypted = await db.get(STORE_NAME, "ek"); // encrypted key
-  const iv = await db.get(STORE_NAME, "iv"); // initialization vector
+  const encrypted = await db.get(STORE_NAME, "ek");
+  const iv = await db.get(STORE_NAME, "iv");
 
   if (!encrypted || !iv) return null;
 

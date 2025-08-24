@@ -29,6 +29,8 @@ const SignIn = () => {
         password: data.password,
       })) as SignInResponseWithKeys;
 
+      console.log("SignIn result:", result);
+
       if (result?.error) {
         throw new Error(result.error === "CredentialsSignin" 
           ? "Invalid credentials. Please check your email/username and password."
@@ -49,7 +51,10 @@ const SignIn = () => {
         throw new Error("User session not found. Please try logging in again.");
       }
 
+      console.log("User session:", session);
+
       const { encryptedPrivateKey, salt, nonce } = session.user;
+
       if (!encryptedPrivateKey || !salt || !nonce) {
         throw new Error("Your account is missing required security data. Please contact support.");
       }
@@ -69,9 +74,9 @@ const SignIn = () => {
 
       toast.success("Login successful");
       
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 100);
+      // setTimeout(() => {
+      //   window.location.href = "/dashboard";
+      // }, 100);
       
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";

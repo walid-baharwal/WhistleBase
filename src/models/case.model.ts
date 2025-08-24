@@ -1,54 +1,67 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface Case extends Document {
-    form_id: mongoose.Types.ObjectId;
-    case_code: string;
-    category: string;
-    content: string;
-    is_anonymous: boolean;
-    status: "OPEN" | "CLOSED";
+  channel_id: mongoose.Types.ObjectId;
+  anon_public_key: string;
+  category: string;
+  content: string;
+  status: "OPEN" | "CLOSED";
+  justification: "JUSTIFIED" | "UNJUSTIFIED" | "NONE";
+  forReceiver: string;
+  forSender: string;
 }
 
 const caseSchema: Schema<Case> = new Schema(
-    {
-        form_id: {
-            type: Schema.Types.ObjectId,
-            ref: "Form",
-            required: true,
-        },
-        case_code: {
-            type: String,
-            required: true,
-            unique: true,
-            trim: true,
-        },
-        category: {
-            type: String,
-            required: true,
-            trim: true,
-        },
-        content: {
-            type: String,
-            required: true,
-            trim: true,
-        },
-        is_anonymous: {
-            type: Boolean,
-            required: true,
-            default: false,
-        },
-        status: {
-            type: String,
-            required: true,
-            enum: ["OPEN", "CLOSED"],
-            default: "OPEN",
-        },
+  {
+    channel_id: {
+      type: Schema.Types.ObjectId,
+      ref: "Channel",
+      required: true,
     },
-    { timestamps: true }
+    anon_public_key: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
+    category: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    content: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    status: {
+      type: String,
+      required: true,
+      enum: ["OPEN", "CLOSED"],
+      default: "OPEN",
+    },
+    justification: {
+      type: String,
+      required: true,
+      enum: ["JUSTIFIED", "UNJUSTIFIED", "NONE"],
+      default: "NONE",
+    },
+
+    forReceiver: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    forSender: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+  },
+  { timestamps: true }
 );
 
 const CaseModel =
-    (mongoose.models.Case as mongoose.Model<Case>) || 
-    mongoose.model<Case>("Case", caseSchema);
+  (mongoose.models.Case as mongoose.Model<Case>) || mongoose.model<Case>("Case", caseSchema);
 
-export default CaseModel; 
+export default CaseModel;

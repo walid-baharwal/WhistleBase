@@ -4,14 +4,13 @@ export async function generateSessionKey(): Promise<string> {
       name: "AES-GCM",
       length: 256,
     },
-    true, // extractable
+    true,
     ["encrypt", "decrypt"]
   );
 
-  const rawKey = await crypto.subtle.exportKey("raw", key); // ArrayBuffer
+  const rawKey = await crypto.subtle.exportKey("raw", key);
   const rawKeyBytes = new Uint8Array(rawKey);
 
-  // Convert to Base64
   const base64Key = btoa(String.fromCharCode(...rawKeyBytes));
   return base64Key;
 }

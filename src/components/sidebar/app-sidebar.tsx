@@ -1,14 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  BookOpen,
-  Bot,
-  GalleryVerticalEnd,
-  PieChart,
-  Settings2,
-  SquareTerminal,
-} from "lucide-react";
+import { BookOpen, Bot, GalleryVerticalEnd, Settings2, SquareTerminal } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/sidebar/nav-user";
@@ -22,7 +15,6 @@ import {
 } from "@/components/ui/sidebar";
 import { useSession } from "next-auth/react";
 import { User } from "next-auth";
-
 
 const data = {
   teams: [
@@ -38,12 +30,6 @@ const data = {
       url: "/dashboard",
       icon: SquareTerminal,
       isActive: true,
-    },
-    {
-      title: " Analytics",
-      url: "/dashboard/analytics",
-      icon: PieChart,
-      isActive: false,
     },
     {
       title: "Cases",

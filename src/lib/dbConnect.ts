@@ -8,16 +8,16 @@ const connection: connectionObject = {};
 
 async function dbConnect(): Promise<void> {
   if (connection.isConnected) {
-    // console.log("Already connected to Database");
+    console.log("Already connected to Database");
     return;
   }
-  
+
   const mongoUri = process.env.MONGO_URI;
   if (!mongoUri) {
     console.error("MONGO_URI environment variable is not defined");
     process.exit(1);
   }
-  
+
   try {
     const db = await mongoose.connect(mongoUri.trim(), {});
 

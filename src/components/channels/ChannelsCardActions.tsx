@@ -4,7 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, Trash2, MoreHorizontal, Power, PowerOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,13 +31,11 @@ interface ChannelCardActionsProps {
 export default function ChannelCardActions({ channelId, isActive }: ChannelCardActionsProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const router = useRouter();
-  
-//   const utils = trpc.useUtils();
-  
+
   const deleteMutation = trpc.channel.delete.useMutation({
     onSuccess: () => {
       toast.success("Channel deleted successfully");
-      // Refresh the page to get updated data from server
+
       router.refresh();
       setDeleteDialogOpen(false);
     },
@@ -44,7 +47,7 @@ export default function ChannelCardActions({ channelId, isActive }: ChannelCardA
   const updateMutation = trpc.channel.update.useMutation({
     onSuccess: () => {
       toast.success("Channel updated successfully");
-      // Refresh the page to get updated data from server
+
       router.refresh();
     },
     onError: (error) => {
@@ -67,7 +70,7 @@ export default function ChannelCardActions({ channelId, isActive }: ChannelCardA
   const handleToggleStatus = () => {
     updateMutation.mutate({
       id: channelId,
-      data: { is_active: !isActive }
+      data: { is_active: !isActive },
     });
   };
 
@@ -97,10 +100,7 @@ export default function ChannelCardActions({ channelId, isActive }: ChannelCardA
               </>
             )}
           </DropdownMenuItem>
-          <DropdownMenuItem 
-            className="text-destructive" 
-            onClick={handleDeleteChannel}
-          >
+          <DropdownMenuItem className="text-destructive" onClick={handleDeleteChannel}>
             <Trash2 className="mr-2 h-4 w-4" />
             Delete
           </DropdownMenuItem>
@@ -112,13 +112,16 @@ export default function ChannelCardActions({ channelId, isActive }: ChannelCardA
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the channel
-              and remove all associated data from our servers.
+              This action cannot be undone. This will permanently delete the channel and remove all
+              associated data from our servers.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

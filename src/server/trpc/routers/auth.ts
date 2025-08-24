@@ -6,8 +6,8 @@ import EmailVerificationModel from "@/models/email_verification.model";
 
 import { sendVerificationEmail } from "@/helpers/sendVerificationEmail";
 import { verificationCodeSchema, organizationStepSchema } from "@/schemas/signUp.schema";
-import SubscriptionModel from "@/models/subscription.model";
 import OrganizationMemberModel from "@/models/organization_member.model";
+import { initSodiumServer } from "@/lib/sodium-server";
 
 const personalInfoSchema = z.object({
   email: z.string().email(),
@@ -33,7 +33,6 @@ export const authRouter = createTRPCRouter({
     });
 
     if (existingUser) {
-      // Update existing unverified user
       existingUser.first_name = first_name;
       existingUser.last_name = last_name;
       existingUser.password = password;
@@ -107,7 +106,7 @@ export const authRouter = createTRPCRouter({
         encryptedPrivateKey: z.string(),
         salt: z.string(),
         nonce: z.string(),
-        publicKey: z.instanceof(Uint8Array<ArrayBufferLike>),//unit8array<ArrayBufferLike>
+        publicKey: z.instanceof(Uint8Array<ArrayBufferLike>),
       })
     )
     .mutation(async ({ input }) => {
@@ -142,11 +141,15 @@ export const authRouter = createTRPCRouter({
 
       user.email_verified_at = new Date();
 
+      const sodium = await initSodiumServer();
+
+      const convertedPublicKey = sodium.to_base64(publicKey);
+
       const newOrganization = new OrganizationModel({
         name: organization_name,
         owner: user._id,
         country,
-        public_key: publicKey,
+        public_key: convertedPublicKey,
       });
 
       const orgMember = new OrganizationMemberModel({
@@ -158,19 +161,10 @@ export const authRouter = createTRPCRouter({
         nonce,
       });
 
-      const trialSubscription = new SubscriptionModel({
-        plan_id: null,
-        organization_id: newOrganization._id,
-        type: "TRIAL",
-        started_at: new Date(),
-        ends_at: new Date(new Date().setDate(new Date().getDate() + 14)), // 14 days trial
-      });
-
       await Promise.all([
         user.save(),
         newOrganization.save(),
         orgMember.save(),
-        trialSubscription.save(),
         EmailVerificationModel.deleteOne({ _id: verification._id }),
       ]);
 

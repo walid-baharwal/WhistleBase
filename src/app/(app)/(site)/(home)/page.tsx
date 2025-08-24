@@ -67,7 +67,7 @@ const Home = () => {
             heard.
           </p>
           <div className="flex justify-center gap-6 mb-12">
-            <Link href="/auth/sign-up">
+            <Link href="/access-code">
               <Button size="lg" className="shadow-lg px-8 py-3 text-lg font-semibold">
                 Submit Anonymous Report
               </Button>
