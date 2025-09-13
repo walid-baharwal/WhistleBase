@@ -280,7 +280,7 @@ export default function AdminCaseViewPage() {
 
     downloadAttachmentMutation.mutate({
       attachmentId,
-      publicKey: caseData?.organization_public_key || "",
+      publicKey: caseData?.anon_public_key || "",
     });
   };
 
