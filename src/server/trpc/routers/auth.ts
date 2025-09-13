@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { publicProcedure, createTRPCRouter } from "../context";
+import { publicProcedure, createTRPCRouter, protectedProcedure } from "../context";
+import { organizationSettingsSchema, userSettingsSchema, passwordSettingsSchema } from "@/schemas/settings.schema";
 import UserModel from "@/models/user.model";
 import OrganizationModel from "@/models/organization.model";
 import EmailVerificationModel from "@/models/email_verification.model";
@@ -176,6 +177,96 @@ export const authRouter = createTRPCRouter({
           email_verified_at: user.email_verified_at,
           first_name: user.first_name,
           last_name: user.last_name,
+        },
+      };
+    }),
+
+  updateOrganization: protectedProcedure
+    .input(organizationSettingsSchema)
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.user._id;
+
+      const organization = await OrganizationModel.findOne({ owner: userId });
+      if (!organization) {
+        throw new Error("Organization not found");
+      }
+
+      organization.name = input.name;
+      await organization.save();
+
+      return {
+        success: true,
+        message: "Organization updated successfully",
+      };
+    }),
+
+  updateUserProfile: protectedProcedure
+    .input(userSettingsSchema)
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.user._id;
+
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      user.first_name = input.first_name;
+      user.last_name = input.last_name;
+      await user.save();
+
+      return {
+        success: true,
+        message: "Profile updated successfully",
+      };
+    }),
+
+  updatePassword: protectedProcedure
+    .input(passwordSettingsSchema)
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.user._id;
+
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      const isPasswordCorrect = await user.isPasswordCorrect(input.current_password);
+      if (!isPasswordCorrect) {
+        throw new Error("Current password is incorrect");
+      }
+
+      user.password = input.new_password;
+      await user.save();
+
+      return {
+        success: true,
+        message: "Password updated successfully",
+      };
+    }),
+
+  getUserAndOrganization: protectedProcedure
+    .query(async ({ ctx }) => {
+      const userId = ctx.session.user._id;
+
+      const user = await UserModel.findById(userId).select("-password");
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      const organization = await OrganizationModel.findOne({ owner: userId });
+      if (!organization) {
+        throw new Error("Organization not found");
+      }
+
+      return {
+        user: {
+          first_name: user.first_name,
+          last_name: user.last_name,
+          email: user.email,
+        },
+        organization: {
+          name: organization.name,
+          country: organization.country,
         },
       };
     }),

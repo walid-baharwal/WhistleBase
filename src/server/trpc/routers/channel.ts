@@ -1,7 +1,8 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "@/server/trpc/context";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/trpc/context";
 import { channelSchema } from "@/schemas/channel.schema";
 import ChannelModel from "@/models/channel.model";
+import OrganizationModel from "@/models/organization.model";
 
 export const channelRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async ({ ctx }) => {
@@ -164,4 +165,26 @@ export const channelRouter = createTRPCRouter({
       access_code: accessCode,
     };
   }),
+
+  getOrgPublicKeyByAccessCode: publicProcedure
+    .input(z.object({ accessCode: z.string() }))
+    .query(async ({ input }) => {
+      const channel = await ChannelModel.findOne({
+        access_code: input.accessCode,
+        is_active: true,
+      }).populate("organization_id");
+
+      if (!channel) {
+        throw new Error("Invalid access code");
+      }
+
+      const organization = await OrganizationModel.findById(channel.organization_id);
+      if (!organization || !organization.public_key) {
+        throw new Error("Organization public key not found");
+      }
+
+      return {
+        publicKey: organization.public_key,
+      };
+    }),
 });

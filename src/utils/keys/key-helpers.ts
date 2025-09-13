@@ -1,3 +1,5 @@
+"use client";
+
 export function mergeKeys(publicKey: string, privateKey: string): string {
   const publicKeyLength = publicKey.length.toString().padStart(3, "0");
 
@@ -33,7 +35,7 @@ export function generateCaseAccessKey(
   publicKey: string,
   privateKey: string
 ): string {
-  return mergeKeys(publicKey + caseId, privateKey);
+  return mergeKeys(`${publicKey}:${caseId}`, privateKey);
 }
 
 export function formatKeyForDisplay(mergedKey: string): string {

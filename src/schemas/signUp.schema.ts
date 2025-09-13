@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// Step 1: Personal information with email and password
+
 export const personalStepSchema = z.object({
   first_name: z.string().min(1, "First name is required").max(50, "First name must be less than 50 characters"),
   last_name: z.string().min(1, "Last name is required").max(50, "Last name must be less than 50 characters"),
@@ -14,18 +14,18 @@ export const personalStepSchema = z.object({
   path: ["confirm_password"],
 });
 
-// Step 2: Email verification
+
 export const verificationCodeSchema = z.object({
   verification_code: z.string().length(6, "Verification code must be 6 digits"),
 });
 
-// Step 3: Organization details
+
 export const organizationStepSchema = z.object({
   organization_name: z.string().min(1, "Organization name is required").max(100, "Organization name must be less than 100 characters"),
   country: z.string().min(1, "Please select a country"),
 });
 
-// Combined schema for final submission
+
 export const completeSignupSchema = z.object({
   email: z.string().email(),
   first_name: z.string().min(1),

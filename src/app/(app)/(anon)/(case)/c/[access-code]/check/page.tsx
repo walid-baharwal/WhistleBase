@@ -4,14 +4,16 @@ import ChannelModel from "@/models/channel.model";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import SecurityMessage from "@/components/security-message";
+import CheckCaseForm from "@/screens/case/CheckCaseForm";
 
 interface PageProps {
   params: Promise<{
     "access-code": string;
+  }>;
+  searchParams: Promise<{
+    error?: string;
   }>;
 }
 
@@ -36,9 +38,11 @@ async function getChannelByAccessCode(accessCode: string) {
   };
 }
 
-export default async function CheckCasePage({ params }: PageProps) {
+export default async function CheckCasePage({ params, searchParams }: PageProps) {
   const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
   const accessCode = resolvedParams["access-code"];
+  const error = resolvedSearchParams.error;
   const channel = await getChannelByAccessCode(accessCode);
 
   if (!channel) {
@@ -69,34 +73,15 @@ export default async function CheckCasePage({ params }: PageProps) {
             Check Case Status
           </h1>
           <p className="text-gray-600">
-            Enter your case ID to check the status of your submitted report
+            Enter your case reference key to check the status of your submitted report
           </p>
         </div>
 
-        <form className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="case_id">Case ID</Label>
-            <Input
-              id="case_id"
-              name="case_id"
-              placeholder="Enter your case ID"
-              required
-              className="w-full text-center font-mono"
-            />
-            <p className="text-sm text-gray-500 text-center">
-              This was provided when you submitted your report
-            </p>
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full"
-            style={{ backgroundColor: channel.primary_color }}
-          >
-            <Search className="h-4 w-4 mr-2" />
-            Check Case Status
-          </Button>
-        </form>
+        <CheckCaseForm 
+          accessCode={accessCode} 
+          primaryColor={channel.primary_color}
+          error={error}
+        />
 
         <SecurityMessage />
       </div>

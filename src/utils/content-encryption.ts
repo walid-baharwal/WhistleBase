@@ -6,8 +6,8 @@ export async function encryptCaseContent(
   orgPublicKey: Uint8Array<ArrayBufferLike>
 ): Promise<{
   encryptedContent: string;
-  forSender: string;
-  forReceiver: string;
+  forAnonUser: string;
+  forAdmin: string;
 } | null> {
   try {
     console.log("Starting content encryption...", {
@@ -39,8 +39,8 @@ export async function encryptCaseContent(
 
     return {
       encryptedContent: `${encryptedContentB64}:${nonceB64}`,
-      forSender: aesKeyForSenderB64,
-      forReceiver: aesKeyForReceiverB64,
+      forAnonUser: aesKeyForSenderB64,
+      forAdmin: aesKeyForReceiverB64,
     };
   } catch (error) {
     console.error("Failed to encrypt case content:", error);
@@ -48,7 +48,7 @@ export async function encryptCaseContent(
   }
 }
 
-export async function decryptCaseContentForSender(
+export async function decryptCaseContentForAnonUser(
   encryptedContent: string,
   encryptedAesKey: string,
   anonPrivateKey: string,
@@ -81,12 +81,12 @@ export async function decryptCaseContentForSender(
 
     return sodium.to_string(decryptedContent);
   } catch (error) {
-    console.error("Failed to decrypt case content for sender:", error);
+    console.error("Failed to decrypt case content for anon user:", error);
     return null;
   }
 }
 
-export async function decryptCaseContentForReceiver(
+export async function decryptCaseContentForAdmin(
   encryptedContent: string,
   encryptedAesKey: string,
   orgPrivateKey: string,
@@ -119,7 +119,7 @@ export async function decryptCaseContentForReceiver(
 
     return sodium.to_string(decryptedContent);
   } catch (error) {
-    console.error("Failed to decrypt case content for receiver:", error);
+    console.error("Failed to decrypt case content for admin:", error);
     return null;
   }
 }

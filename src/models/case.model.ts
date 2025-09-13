@@ -7,8 +7,8 @@ export interface Case extends Document {
   content: string;
   status: "OPEN" | "CLOSED";
   justification: "JUSTIFIED" | "UNJUSTIFIED" | "NONE";
-  forReceiver: string;
-  forSender: string;
+  forAdmin: string;
+  forAnonUser: string;
 }
 
 const caseSchema: Schema<Case> = new Schema(
@@ -47,12 +47,12 @@ const caseSchema: Schema<Case> = new Schema(
       default: "NONE",
     },
 
-    forReceiver: {
+    forAdmin: {
       type: String,
       required: true,
       trim: true,
     },
-    forSender: {
+    forAnonUser: {
       type: String,
       required: true,
       trim: true,

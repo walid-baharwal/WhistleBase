@@ -21,7 +21,7 @@ const SignIn = () => {
 
   const handleSubmit = async (data: z.infer<typeof signInSchema>) => {
     setIsSubmitting(true);
-    
+
     try {
       const result = (await signIn("credentials", {
         redirect: false,
@@ -32,9 +32,11 @@ const SignIn = () => {
       console.log("SignIn result:", result);
 
       if (result?.error) {
-        throw new Error(result.error === "CredentialsSignin" 
-          ? "Invalid credentials. Please check your email/username and password."
-          : result.error);
+        throw new Error(
+          result.error === "CredentialsSignin"
+            ? "Invalid credentials. Please check your email/username and password."
+            : result.error
+        );
       }
 
       if (!result?.url) {
@@ -43,7 +45,7 @@ const SignIn = () => {
 
       let session = await getSession();
       if (!session?.user) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         session = await getSession();
       }
 
@@ -65,34 +67,35 @@ const SignIn = () => {
         salt,
         nonce
       );
-      
+
       if (!privateKey) {
-        throw new Error("Unable to decrypt your private key. Please verify your password is correct.");
+        throw new Error(
+          "Unable to decrypt your private key. Please verify your password is correct."
+        );
       }
 
       await encryptAndSaveToIndexedDB({ privateKey });
 
       toast.success("Login successful");
-      
-      // setTimeout(() => {
-      //   window.location.href = "/dashboard";
-      // }, 100);
-      
+
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 100);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
       console.error("Sign in error:", error);
-      if(errorMessage.includes(" not found")) {
+      if (errorMessage.includes(" not found")) {
         toast.error("User not found", {
           description: "Please check your email/username and try again.",
         });
-      } else if(errorMessage.includes("Invalid credentials")) {
+      } else if (errorMessage.includes("Invalid credentials")) {
         toast.error("Invalid credentials", {
           description: "Please check your email/username and password and try again.",
         });
       } else if (errorMessage.includes("verify your account")) {
-        toast.error("Please verify your account before logging in",{
-          description:"You have to re sign up with same email",
-          duration:6000,
+        toast.error("Please verify your account before logging in", {
+          description: "You have to re sign up with same email",
+          duration: 6000,
         });
       } else {
         toast.error("An unexpected error occurred", {
