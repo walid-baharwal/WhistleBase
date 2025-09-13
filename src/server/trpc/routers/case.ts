@@ -358,7 +358,7 @@ export const caseRouter = createTRPCRouter({
     .input(
       z.object({
         caseId: z.string(),
-        message: z.string(),
+        message: z.string().optional(),
         attachments: z
           .array(
             z.object({

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import LottieLoading from "@/components/LottieLoading";
 import { useForm } from "react-hook-form";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -148,7 +147,11 @@ export default function FormCreatorScreen() {
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       {isEditMode && isLoadingChannel && (
-        <LottieLoading size={64} message="Loading channel data..." variant="primary" />
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          </div>
+        </div>
       )}
 
       {(!isEditMode || !isLoadingChannel) && (

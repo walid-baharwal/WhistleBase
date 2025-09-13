@@ -508,7 +508,7 @@ export default function AdminCaseViewPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 ">
-            {/* Admin Controls */}
+      
             <Card className="bg-primary/5 border-primary/20">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg text-primary">Admin Controls</CardTitle>
@@ -569,7 +569,7 @@ export default function AdminCaseViewPage() {
               </CardContent>
             </Card>
 
-            {/* Case Information - copied and adapted from anonymous view */}
+         
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-1">Category</h3>
@@ -667,7 +667,7 @@ export default function AdminCaseViewPage() {
                       }`}
                     >
                       <div className="text-[15px] text-wrap break-words">
-                        {decryptedMessages[message._id] || "Unable to decrypt message"}
+                        {decryptedMessages[message._id]}
                       </div>
                       {message.attachments && message.attachments.length > 0 && (
                         <div className="mt-3 space-y-2">
@@ -733,7 +733,7 @@ export default function AdminCaseViewPage() {
 
             <Separator className="my-4" />
 
-            {/* Message Input - same as anonymous view */}
+         
             <div className="flex-shrink-0">
               {selectedFiles.length > 0 && (
                 <div className="mb-4 space-y-2">
@@ -821,7 +821,7 @@ export default function AdminCaseViewPage() {
                     sendingMessage ||
                     isUploading
                   }
-                  className="self-end h-10 px-4"
+                  className="self-end h-10 px-4 mb-[22px]"
                   title="Send message (Enter)"
                 >
                   {sendingMessage ? (

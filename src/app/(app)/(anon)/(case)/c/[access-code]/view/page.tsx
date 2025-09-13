@@ -655,7 +655,7 @@ export default function CaseViewPage() {
                 </div>
               )}
 
-              <div className="flex space-x-2">
+              <div className="flex space-x-2 ">
                 <div className="flex-grow">
                   <div className="relative">
                     <Input
@@ -707,7 +707,7 @@ export default function CaseViewPage() {
                     sendingMessage ||
                     isUploading
                   }
-                  className="self-end h-10 px-4"
+                  className="self-end  px-4"
                   title="Send message (Enter)"
                 >
                   {sendingMessage ? (
