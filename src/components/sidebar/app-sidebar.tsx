@@ -33,7 +33,7 @@ const data = {
     },
     {
       title: "Cases",
-      url: "#",
+      url: "/dashboard/cases",
       icon: BookOpen,
       isActive: false,
     },

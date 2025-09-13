@@ -1,23 +1,18 @@
-import { initSodiumServer } from "@/lib/sodium-server";
+"use client";
+import { initSodium } from "@/lib/sodium";
 
 export async function encryptCaseContent(
   content: string,
   anonPublicKey: Uint8Array<ArrayBufferLike>,
-  orgPublicKey: Uint8Array<ArrayBufferLike>
+  orgPublicKey: Uint8Array<ArrayBufferLike>,
+  aesKey: Uint8Array<ArrayBufferLike>
 ): Promise<{
   encryptedContent: string;
   forAnonUser: string;
   forAdmin: string;
 } | null> {
   try {
-    console.log("Starting content encryption...", {
-      content,
-      anonPublicKey,
-      orgPublicKey,
-    });
-    const sodium = await initSodiumServer();
-
-    const aesKey = sodium.crypto_aead_xchacha20poly1305_ietf_keygen();
+    const sodium = await initSodium();
 
     const nonce = sodium.randombytes_buf(sodium.crypto_aead_xchacha20poly1305_ietf_NPUBBYTES);
     const encryptedContentUint8 = sodium.crypto_aead_xchacha20poly1305_ietf_encrypt(
@@ -48,27 +43,27 @@ export async function encryptCaseContent(
   }
 }
 
-export async function decryptCaseContentForAnonUser(
+export async function decryptCaseContent(
   encryptedContent: string,
   encryptedAesKey: string,
-  anonPrivateKey: string,
-  anonPublicKey: string
+  PrivateKey: string,
+  PublicKey: string
 ): Promise<string | null> {
   try {
-    const sodium = await initSodiumServer();
+    const sodium = await initSodium();
 
     const [encryptedContentB64, nonceB64] = encryptedContent.split(":");
     const encryptedContentUint8 = sodium.from_base64(encryptedContentB64);
     const nonce = sodium.from_base64(nonceB64);
 
-    const anonPrivateKeyUint8 = sodium.from_base64(anonPrivateKey);
-    const anonPublicKeyUint8 = sodium.from_base64(anonPublicKey);
+    const PrivateKeyUint8 = sodium.from_base64(PrivateKey);
+    const PublicKeyUint8 = sodium.from_base64(PublicKey);
     const encryptedAesKeyUint8 = sodium.from_base64(encryptedAesKey);
 
     const aesKey = sodium.crypto_box_seal_open(
       encryptedAesKeyUint8,
-      anonPublicKeyUint8,
-      anonPrivateKeyUint8
+      PublicKeyUint8,
+      PrivateKeyUint8
     );
 
     const decryptedContent = sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(
@@ -86,44 +81,49 @@ export async function decryptCaseContentForAnonUser(
   }
 }
 
-export async function decryptCaseContentForAdmin(
-  encryptedContent: string,
-  encryptedAesKey: string,
-  orgPrivateKey: string,
-  orgPublicKey: string
-): Promise<string | null> {
+export function validateEncryptedCaseData(content: string): boolean {
+  return content.includes(":") && content.split(":").length === 2;
+}
+
+export async function generateAnonKeyPair(): Promise<{
+  publicKey: Uint8Array;
+  privateKey: Uint8Array;
+} | null> {
   try {
-    const sodium = await initSodiumServer();
+    const sodium = await initSodium();
+    const keyPair = sodium.crypto_box_keypair();
 
-    const [encryptedContentB64, nonceB64] = encryptedContent.split(":");
-    const encryptedContentUint8 = sodium.from_base64(encryptedContentB64);
-    const nonce = sodium.from_base64(nonceB64);
-
-    const orgPrivateKeyUint8 = sodium.from_base64(orgPrivateKey);
-    const orgPublicKeyUint8 = sodium.from_base64(orgPublicKey);
-    const encryptedAesKeyUint8 = sodium.from_base64(encryptedAesKey);
-
-    const aesKey = sodium.crypto_box_seal_open(
-      encryptedAesKeyUint8,
-      orgPublicKeyUint8,
-      orgPrivateKeyUint8
-    );
-
-    const decryptedContent = sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(
-      null,
-      encryptedContentUint8,
-      null,
-      nonce,
-      aesKey
-    );
-
-    return sodium.to_string(decryptedContent);
+    return {
+      publicKey: keyPair.publicKey,
+      privateKey: keyPair.privateKey,
+    };
   } catch (error) {
-    console.error("Failed to decrypt case content for admin:", error);
+    console.error("Failed to generate anonymous keypair:", error);
     return null;
   }
 }
 
-export function validateEncryptedCaseData(content: string): boolean {
-  return content.includes(":") && content.split(":").length === 2;
+export async function getAesKey(
+  encryptedAesKey: string,
+  anonPrivateKey: string,
+  anonPublicKey: string
+): Promise<Uint8Array | null> {
+  try {
+    const sodium = await initSodium();
+
+    const anonPrivateKeyUint8 = sodium.from_base64(anonPrivateKey);
+    const anonPublicKeyUint8 = sodium.from_base64(anonPublicKey);
+    const encryptedAesKeyUint8 = sodium.from_base64(encryptedAesKey);
+
+    const aesKey = sodium.crypto_box_seal_open(
+      encryptedAesKeyUint8,
+      anonPublicKeyUint8,
+      anonPrivateKeyUint8
+    );
+
+    return aesKey;
+  } catch (error) {
+    console.error("Failed to get AES key for messages:", error);
+    return null;
+  }
 }

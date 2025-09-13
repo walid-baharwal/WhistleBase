@@ -4,7 +4,6 @@ export interface Channel extends Document {
   organization_id: mongoose.Types.ObjectId;
   title: string;
   description: string;
-  slug: string;
   access_code: string;
   primary_color: string;
   submission_message: string;
@@ -27,13 +26,6 @@ const channelSchema: Schema<Channel> = new Schema(
       type: String,
       required: true,
       trim: true,
-    },
-    slug: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-      lowercase: true,
     },
     access_code: {
       type: String,

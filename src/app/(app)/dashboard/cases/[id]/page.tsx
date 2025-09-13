@@ -1,22 +1,30 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { File, ArrowLeft, Send, Download, Loader2, Upload, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import Link from "next/link";
 import { decryptCaseContent } from "@/utils/content-encryption";
 import { encryptMessageFromAnonymous, decryptMessage } from "@/utils/message-encryption";
 import { getAesKey } from "@/utils/content-encryption";
 import { Separator } from "@/components/ui/separator";
-import { getTemporaryKeys } from "@/utils/keys/ls-keys";
+import { getFromIndexDbAndDecrypt } from "@/utils/index-db/indexed-db-keys";
 import { trpc } from "@/lib/trpc";
 import { base64ToIv, decryptFile, encryptFile, ivToBase64 } from "@/utils/attachment-encrption";
 import { useUploadFile } from "@/helpers/uploadFile";
-import { Input } from "@/components/ui/input";
+import { initSodium } from "@/lib/sodium";
 
 interface Attachment {
   _id: string;
@@ -24,6 +32,7 @@ interface Attachment {
   mime_type: string;
   size: number;
   storage_key: string;
+  iv: string;
 }
 
 export type MessageType = {
@@ -41,26 +50,30 @@ export type MessageType = {
   createdAt: string;
 };
 
-export default function CaseViewPage() {
-  const searchParams = useSearchParams();
-  const caseId = searchParams.get("case_id");
-  const accessCode = window.location.pathname.split("/")[2];
-  const { publicKey, privateKey } = getTemporaryKeys() || {};
+export default function AdminCaseViewPage() {
+  const params = useParams();
+  const caseId = params.id as string;
   const [decryptedContent, setDecryptedContent] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState<string>("");
   const [aesKey, setAesKey] = useState<Uint8Array | null>(null);
+  const [adminKey, setAdminKey] = useState<string | null>(null);
   const [decryptedMessages, setDecryptedMessages] = useState<{ [key: string]: string }>({});
 
   const [sendingMessage, setSendingMessage] = useState<boolean>(false);
   const [downloadingAttachment, setDownloadingAttachment] = useState<string | null>(null);
 
-  // File upload states
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { uploadFile } = useUploadFile();
+
+  const [newStatus, setNewStatus] = useState<"OPEN" | "CLOSED">("OPEN");
+  const [newJustification, setNewJustification] = useState<"JUSTIFIED" | "UNJUSTIFIED" | "NONE">(
+    "NONE"
+  );
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const allowedExtensions = ["docx", "pdf", "csv", "jpeg", "jpg", "png", "webp"];
 
@@ -69,14 +82,18 @@ export default function CaseViewPage() {
     isLoading,
     error: caseError,
     refetch: refetchCaseData,
-  } = trpc.case.getCase.useQuery(
-    { caseId: caseId || "", anonPublicKey: publicKey || "" },
+  } = trpc.case.getAdminCase.useQuery(
+    { caseId: caseId || "" },
     {
-      enabled: !!caseId && !!publicKey && !!privateKey,
+      enabled: !!caseId,
       staleTime: 10000,
       refetchInterval: 10000,
     }
   );
+
+  useLayoutEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
+  }, [caseData?.messages, decryptedMessages, selectedFiles]);
 
   useEffect(() => {
     if (caseError) {
@@ -84,9 +101,27 @@ export default function CaseViewPage() {
     }
   }, [caseError]);
 
-  useLayoutEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
-  }, [caseData?.messages, decryptedMessages, selectedFiles]);
+  useEffect(() => {
+    const initializeAdminKeys = async () => {
+      try {
+        const adminPrivateKey = await getFromIndexDbAndDecrypt();
+        const sodium = await initSodium();
+        const adminPrivateKeyUint8 = sodium.to_base64(
+          adminPrivateKey as Uint8Array<ArrayBufferLike>
+        );
+        if (adminPrivateKeyUint8) {
+          setAdminKey(adminPrivateKeyUint8);
+        } else {
+          setError("Failed to retrieve admin keys. Please log in again.");
+        }
+      } catch (err) {
+        console.error("Error getting admin keys:", err);
+        setError("Failed to retrieve admin keys. Please log in again.");
+      }
+    };
+
+    initializeAdminKeys();
+  }, []);
 
   useEffect(() => {
     if (!caseId) {
@@ -94,30 +129,26 @@ export default function CaseViewPage() {
       return;
     }
 
-    if (!publicKey || !privateKey) {
-      window.location.href = `/c/${accessCode}/check?error=${encodeURIComponent(
-        "Session expired. Please enter your access key again."
-      )}`;
+    if (!adminKey) {
       return;
     }
 
-    if (caseData?.content && caseData?.forAnonUser) {
+    if (caseData?.content && caseData?.forAdmin) {
       const decryptContent = async () => {
         try {
           const decrypted = await decryptCaseContent(
             caseData?.content as string,
-            caseData.forAnonUser as string,
-            privateKey,
-            publicKey
+            caseData.forAdmin as string,
+            adminKey as string,
+            caseData.organization_public_key as string
           );
-
           if (decrypted) {
             setDecryptedContent(decrypted);
 
             const messageAesKey = await getAesKey(
-              caseData.forAnonUser as string,
-              privateKey,
-              publicKey
+              caseData.forAdmin as string,
+              adminKey,
+              caseData.organization_public_key as string
             );
 
             if (messageAesKey) {
@@ -147,15 +178,34 @@ export default function CaseViewPage() {
 
       decryptContent();
     }
-  }, [caseId, publicKey, privateKey, accessCode, caseData]);
+  }, [caseId, adminKey, caseData]);
 
-  const sendMessageMutation = trpc.case.sendMessage.useMutation({
+  useEffect(() => {
+    if (caseData) {
+      setNewStatus(caseData.status as "OPEN" | "CLOSED");
+      setNewJustification(caseData.justification as "JUSTIFIED" | "UNJUSTIFIED" | "NONE");
+    }
+  }, [caseData]);
+
+  const updateStatusMutation = trpc.case.updateCaseStatus.useMutation({
+    onSuccess: () => {
+      refetchCaseData();
+      setIsUpdatingStatus(false);
+    },
+    onError: (err) => {
+      console.error("Error updating case status:", err);
+      setError("Failed to update case status");
+      setIsUpdatingStatus(false);
+    },
+  });
+
+  const sendMessageMutation = trpc.case.sendAdminMessage.useMutation({
     onSuccess: (messageData) => {
-      if (caseData && aesKey) {
-        setDecryptedMessages({
-          ...decryptedMessages,
-          [messageData._id]: newMessage,
-        });
+      if (caseData && aesKey && messageData._id) {
+        setDecryptedMessages((prev) => ({
+          ...prev,
+          [messageData._id as string]: newMessage,
+        }));
         setNewMessage("");
         setSelectedFiles([]);
         refetchCaseData();
@@ -183,9 +233,7 @@ export default function CaseViewPage() {
         }
 
         const encryptedBuffer = await response.arrayBuffer();
-
         const iv = base64ToIv(data.iv);
-
         const decryptedBuffer = await decryptFile(encryptedBuffer, aesKey, iv);
 
         const decryptedBlob = new Blob([decryptedBuffer], { type: data.mimeType });
@@ -217,8 +265,8 @@ export default function CaseViewPage() {
   });
 
   const handleDownloadAttachment = (attachmentId: string) => {
-    if (!publicKey) {
-      setError("Authentication required");
+    if (!adminKey) {
+      setError("Admin authentication required");
       return;
     }
 
@@ -232,67 +280,19 @@ export default function CaseViewPage() {
 
     downloadAttachmentMutation.mutate({
       attachmentId,
-      publicKey,
+      publicKey: caseData?.organization_public_key || "",
     });
   };
 
-  const handleSendMessage = async () => {
-    if (
-      (!newMessage.trim() && selectedFiles.length === 0) ||
-      !caseId ||
-      !publicKey ||
-      !privateKey ||
-      !aesKey
-    )
-      return;
+  const handleUpdateStatus = async () => {
+    if (!caseData) return;
 
-    setSendingMessage(true);
-    try {
-      const encryptedMessage = newMessage.trim()
-        ? await encryptMessageFromAnonymous(newMessage, aesKey)
-        : "";
-
-      if (newMessage.trim() && !encryptedMessage) {
-        throw new Error("Failed to encrypt message");
-      }
-
-      let attachments: Array<{
-        file_name: string;
-        size: number;
-        mime_type: string;
-        storage_key: string;
-        iv: string;
-      }> = [];
-
-      if (selectedFiles.length > 0) {
-        attachments = await uploadFilesForMessage(aesKey);
-      }
-
-      sendMessageMutation.mutate({
-        caseId,
-        message: encryptedMessage || "",
-        senderType: "ANONYMOUS",
-        publicKey,
-        attachments: attachments.length > 0 ? attachments : undefined,
-      });
-    } catch (err) {
-      console.error("Error sending message:", err);
-      setError("Failed to send message");
-      setSendingMessage(false);
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString();
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+    setIsUpdatingStatus(true);
+    updateStatusMutation.mutate({
+      caseId: caseData._id,
+      status: newStatus,
+      justification: newJustification,
+    });
   };
 
   const handleFileSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -371,6 +371,57 @@ export default function CaseViewPage() {
     }
   };
 
+  const handleSendMessage = async () => {
+    if ((!newMessage.trim() && selectedFiles.length === 0) || !caseId || !adminKey || !aesKey)
+      return;
+
+    setSendingMessage(true);
+    try {
+      const encryptedMessage = newMessage.trim()
+        ? await encryptMessageFromAnonymous(newMessage, aesKey)
+        : "";
+
+      if (newMessage.trim() && !encryptedMessage) {
+        throw new Error("Failed to encrypt message");
+      }
+
+      let attachments: Array<{
+        file_name: string;
+        size: number;
+        mime_type: string;
+        storage_key: string;
+        iv: string;
+      }> = [];
+
+      if (selectedFiles.length > 0) {
+        attachments = await uploadFilesForMessage(aesKey);
+      }
+
+      sendMessageMutation.mutate({
+        caseId,
+        message: encryptedMessage || "",
+        attachments: attachments.length > 0 ? attachments : undefined,
+      });
+    } catch (err) {
+      console.error("Error sending message:", err);
+      setError("Failed to send message");
+      setSendingMessage(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
   const getStatusVariant = (status: string) => {
     switch (status) {
       case "OPEN":
@@ -394,6 +445,7 @@ export default function CaseViewPage() {
         return "secondary";
     }
   };
+
   if (error) {
     console.log("error", error);
   }
@@ -414,13 +466,12 @@ export default function CaseViewPage() {
         <div className="bg-muted p-6 rounded-lg max-w-lg w-full text-center">
           <h2 className="text-xl font-semibold text-foreground mb-2">Case Not Found</h2>
           <p className="text-muted-foreground mb-4">
-            The case you&apos;re looking for could not be found. Please check your access key and
-            try again.
+            The case you&apos;re looking for could not be found.
           </p>
           <Button asChild variant="outline">
-            <Link href={`/c/${accessCode}/check`} className="flex items-center gap-2">
+            <Link href="/dashboard/cases" className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
-              Back to Check Page
+              Back to Cases
             </Link>
           </Button>
         </div>
@@ -432,9 +483,9 @@ export default function CaseViewPage() {
     <div className="container mx-auto py-8 px-4 max-w-4xl">
       <div className="mb-6">
         <Button asChild variant="ghost" size="sm">
-          <Link href={`/c/${accessCode}/check`} className="flex items-center gap-2">
+          <Link href="/dashboard/cases" className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
-            Back to Check Page
+            Back to Cases
           </Link>
         </Button>
       </div>
@@ -457,15 +508,78 @@ export default function CaseViewPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 ">
+            {/* Admin Controls */}
+            <Card className="bg-primary/5 border-primary/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg text-primary">Admin Controls</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                      Status
+                    </label>
+                    <Select
+                      value={newStatus}
+                      onValueChange={(value: "OPEN" | "CLOSED") => setNewStatus(value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="OPEN">OPEN</SelectItem>
+                        <SelectItem value="CLOSED">CLOSED</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                      Justification
+                    </label>
+                    <Select
+                      value={newJustification}
+                      onValueChange={(value: "JUSTIFIED" | "UNJUSTIFIED" | "NONE") =>
+                        setNewJustification(value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NONE">NONE</SelectItem>
+                        <SelectItem value="JUSTIFIED">JUSTIFIED</SelectItem>
+                        <SelectItem value="UNJUSTIFIED">UNJUSTIFIED</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-end">
+                    <Button
+                      onClick={handleUpdateStatus}
+                      disabled={
+                        isUpdatingStatus ||
+                        (newStatus === caseData.status &&
+                          newJustification === caseData.justification)
+                      }
+                      className="w-full"
+                    >
+                      {isUpdatingStatus ? "Updating..." : "Update Case"}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Case Information - copied and adapted from anonymous view */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-1">Category</h3>
                 <p className="font-medium text-foreground">{caseData?.category as string}</p>
               </div>
-
               {caseData.justification !== "NONE" && (
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Justification</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                    Current Justification
+                  </h3>
                   <Badge
                     variant={getJustificationVariant(caseData?.justification as string)}
                     className="px-2 py-0.5"
@@ -483,6 +597,7 @@ export default function CaseViewPage() {
               </div>
             </div>
 
+            {/* Case Attachments */}
             {caseData &&
               "attachments" in caseData &&
               Array.isArray(caseData.attachments) &&
@@ -529,6 +644,7 @@ export default function CaseViewPage() {
           </CardContent>
         </Card>
 
+        {/* Messages Section - same as anonymous but with admin sender highlighting */}
         <Card className="flex flex-col h-[600px]">
           <CardHeader className="flex-shrink-0">
             <CardTitle>Messages</CardTitle>
@@ -540,20 +656,19 @@ export default function CaseViewPage() {
                   <div
                     key={message._id}
                     className={`flex ${
-                      message.sender_type === "ANONYMOUS" ? "justify-end" : "justify-start"
+                      message.sender_type === "ADMIN" ? "justify-end" : "justify-start"
                     }`}
                   >
                     <div
                       className={`max-w-[85%] p-4 rounded-lg shadow-sm whitespace-pre-wrap ${
-                        message.sender_type === "ANONYMOUS"
-                          ? "bg-primary/80 text-white "
+                        message.sender_type === "ADMIN"
+                          ? "bg-primary/80  text-white"
                           : "bg-primary/20"
                       }`}
                     >
-                      <div className="text-[15px] text-wrap  break-words ">
-                        {decryptedMessages[message._id]}
+                      <div className="text-[15px] text-wrap break-words">
+                        {decryptedMessages[message._id] || "Unable to decrypt message"}
                       </div>
-
                       {message.attachments && message.attachments.length > 0 && (
                         <div className="mt-3 space-y-2">
                           {message.attachments.map((attachment, attachmentIndex) => (
@@ -573,7 +688,7 @@ export default function CaseViewPage() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className=" hover:text-black bg-transparent"
+                                className="hover:text-black bg-transparent"
                                 onClick={() => handleDownloadAttachment(attachment._id)}
                                 disabled={downloadingAttachment === attachment._id}
                               >
@@ -587,19 +702,17 @@ export default function CaseViewPage() {
                           ))}
                         </div>
                       )}
-                      <div
-                        className={`text-xs mt-2 ${
-                          message.sender_type === "ADMIN" ? "text-muted-foreground" : "text-white"
-                        }`}
-                      >
-                        {message.sender_type === "ADMIN" ? "Admin" : "You"}
-                      </div>
 
                       <div
+                        className={`text-xs mt-2 ${
+                          message.sender_type === "ADMIN" ? "text-white" : "text-muted-foreground"
+                        }`}
+                      >
+                        {message.sender_type === "ADMIN" ? "You" : "Anonymous"}
+                      </div>
+                      <div
                         className={`text-xs  ${
-                          message.sender_type === "ANONYMOUS"
-                            ? "text-white "
-                            : "text-muted-foreground"
+                          message.sender_type === "ADMIN" ? "text-white" : "text-muted-foreground"
                         }`}
                       >
                         {formatDate(message.createdAt)}
@@ -620,6 +733,7 @@ export default function CaseViewPage() {
 
             <Separator className="my-4" />
 
+            {/* Message Input - same as anonymous view */}
             <div className="flex-shrink-0">
               {selectedFiles.length > 0 && (
                 <div className="mb-4 space-y-2">

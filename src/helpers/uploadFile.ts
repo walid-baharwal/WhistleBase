@@ -3,24 +3,29 @@ import { trpc } from "@/lib/trpc";
 export function useUploadFile() {
   const utils = trpc.useUtils();
 
-  const uploadFile = async (file: File, caseId: string) => {
+  const uploadFile = async (
+    file: File | Blob,
+    caseId: string,
+    fileName?: string,
+    fileType?: string
+  ) => {
     try {
-    
+      const name = file instanceof File ? file.name : fileName ?? "encrypted.bin";
+      const type = file instanceof File ? file.type : fileType ?? "application/octet-stream";
+
       const { url, storageKey } = await utils.upload.getUploadUrl.fetch({
-        fileName: file.name,
-        fileType: file.type,
+        fileName: name,
+        fileType: type,
         caseId: caseId,
       });
 
-  
       const response = await fetch(url, {
-        method: 'PUT',
+        method: "PUT",
         body: file,
         headers: {
-          'Content-Type': file.type,
+          "Content-Type": type,
         },
-     
-        mode: 'cors',
+        mode: "cors",
       });
 
       if (!response.ok) {

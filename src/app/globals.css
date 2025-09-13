@@ -36,9 +36,9 @@
   --sidebar-accent-foreground: oklch(0.3684 0.0359 50.9917);
   --sidebar-border: oklch(0.8994 0.0562 90.3274);
   --sidebar-ring: oklch(0.6877 0.1471 54.0978);
-  --font-sans: Oxanium, sans-serif;
-  --font-serif: Merriweather, serif;
-  --font-mono: Fira Code, monospace;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-serif: Georgia, "Times New Roman", Times, serif;
+  --font-mono: "SF Mono", Monaco, Inconsolata, "Roboto Mono", Consolas, "Courier New", monospace;
   --radius: 0.4rem;
   --shadow-2xs: 0px 2px 3px 0px hsl(28.1250 25% 25.0980% / 0.09);
   --shadow-xs: 0px 2px 3px 0px hsl(28.1250 25% 25.0980% / 0.09);
@@ -85,9 +85,9 @@
   --sidebar-accent-foreground: oklch(0.2870 0.0969 255.7053);
   --sidebar-border: oklch(0.3755 0.0130 67.4155);
   --sidebar-ring: oklch(0.7120 0.1939 46.6671);
-  --font-sans: Oxanium, sans-serif;
-  --font-serif: Merriweather, serif;
-  --font-mono: Fira Code, monospace;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-serif: Georgia, "Times New Roman", Times, serif;
+  --font-mono: "SF Mono", Monaco, Inconsolata, "Roboto Mono", Consolas, "Courier New", monospace;
   --radius: 0.4rem;
   --shadow-2xs: 0px 2px 3px 0px hsl(0 0% 10.1961% / 0.09);
   --shadow-xs: 0px 2px 3px 0px hsl(0 0% 10.1961% / 0.09);

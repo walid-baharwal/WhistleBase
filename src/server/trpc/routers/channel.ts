@@ -74,32 +74,6 @@ export const channelRouter = createTRPCRouter({
     return channel;
   }),
 
-  getBySlug: protectedProcedure
-    .input(z.object({ slug: z.string() }))
-    .query(async ({ ctx, input }) => {
-      const channel = await ChannelModel.findOne({
-        slug: input.slug,
-        organization_id: ctx.session.user.organization_id,
-      });
-
-      if (!channel) {
-        throw new Error("Channel not found");
-      }
-
-      return channel;
-    }),
-
-  checkSlugAvailability: protectedProcedure
-    .input(z.object({ slug: z.string() }))
-    .query(async ({ ctx, input }) => {
-      const existingChannel = await ChannelModel.findOne({
-        slug: input.slug,
-        organization_id: ctx.session.user.organization_id,
-      });
-
-      return { available: !existingChannel };
-    }),
-
   checkAccessCodeAvailability: protectedProcedure
     .input(z.object({ access_code: z.string() }))
     .query(async ({ ctx, input }) => {
@@ -112,30 +86,8 @@ export const channelRouter = createTRPCRouter({
     }),
 
   generateUniqueIdentifiers: protectedProcedure.query(async ({ ctx }) => {
-    let slug: string;
-    let isSlugUnique = false;
     let attempts = 0;
     const maxAttempts = 50;
-
-    do {
-      const length = Math.floor(Math.random() * 5) + 8;
-      slug = Array.from({ length }, () => {
-        const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-        return chars[Math.floor(Math.random() * chars.length)];
-      }).join("");
-
-      const existingSlug = await ChannelModel.findOne({
-        slug,
-        organization_id: ctx.session.user.organization_id,
-      });
-
-      isSlugUnique = !existingSlug;
-      attempts++;
-    } while (!isSlugUnique && attempts < maxAttempts);
-
-    if (!isSlugUnique) {
-      throw new Error("Unable to generate unique slug after multiple attempts");
-    }
 
     let accessCode: string;
     let isAccessCodeUnique = false;
@@ -161,7 +113,6 @@ export const channelRouter = createTRPCRouter({
     }
 
     return {
-      slug,
       access_code: accessCode,
     };
   }),

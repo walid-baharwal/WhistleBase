@@ -180,7 +180,7 @@ const Home = () => {
             anonymously. Help create a more ethical and transparent workplace for everyone.
           </p>
           <div className="flex justify-center gap-6">
-            <Link href="/auth/sign-up">
+            <Link href="/access-code">
               <Button
                 size="lg"
                 variant="secondary"

@@ -11,7 +11,6 @@ export const sendVerificationEmail = async (
   verificationCode: string
 ): Promise<EmailResponse> => {
   try {
-  
     if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
       console.error("Gmail credentials not configured in environment variables");
       return {
@@ -20,7 +19,6 @@ export const sendVerificationEmail = async (
       };
     }
 
-   
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -29,11 +27,8 @@ export const sendVerificationEmail = async (
       },
     });
 
-
     await transporter.verify();
-    console.log("SMTP server connection verified");
 
-  
     const htmlTemplate = `
       <!DOCTYPE html>
       <html>
@@ -83,7 +78,6 @@ export const sendVerificationEmail = async (
       </html>
     `;
 
-  
     const mailOptions = {
       from: {
         name: "Whistle - Email Verification",
@@ -95,10 +89,7 @@ export const sendVerificationEmail = async (
       text: `Hello ${name}!\n\nThank you for signing up! Please verify your email address using this verification code: ${verificationCode}\n\nThis code will expire in 1 hour.\n\nIf you didn't request this verification, please ignore this email.\n\nBest regards,\nThe Whistle Team`,
     };
 
-
     await transporter.sendMail(mailOptions);
-
-    console.log(`Verification code sent to ${email}: ${verificationCode}`);
 
     return {
       success: true,
@@ -106,7 +97,6 @@ export const sendVerificationEmail = async (
     };
   } catch (error: unknown) {
     console.error("Error sending verification email:", error);
-
 
     const errorObj = error as { code?: string; message?: string };
 

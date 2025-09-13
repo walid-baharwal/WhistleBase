@@ -18,8 +18,6 @@ export async function verifyAccessCode(formData: FormData) {
       is_active: true,
     }).select("_id title organization_id");
 
-    console.log("Channel found:", channel);
-
     if (!channel) {
       throw new Error("Invalid access code. Please check and try again.");
     }

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { publicProcedure, createTRPCRouter } from "../context";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { s3Client } from "@/lib/s3";
 
@@ -30,5 +30,29 @@ export const uploadRouter = createTRPCRouter({
       });
 
       return { url: signedUrl, storageKey };
+    }),
+
+  getDownloadUrl: publicProcedure
+    .input(
+      z.object({
+        storageKey: z.string(),
+      })
+    )
+    .query(async ({ input }) => {
+      const { storageKey } = input;
+
+      const command = new GetObjectCommand({
+        Bucket: process.env.CLOUDFLARE_BUCKET_NAME!,
+        Key: storageKey,
+      });
+
+      const signedUrl = await getSignedUrl(s3Client, command, {
+        expiresIn: 900,
+        signableHeaders: new Set(["host"]),
+      });
+
+      return {
+        url: signedUrl,
+      };
     }),
 });

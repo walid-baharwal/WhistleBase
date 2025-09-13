@@ -31,8 +31,7 @@ export default async function ChannelCards() {
             <CardContent>
               <CardDescription className="text-sm mb-4">{channel.description}</CardDescription>
               <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>0 cases</span>
-                <span>/{channel.slug}</span>
+                <span>{channel.access_code}</span>
               </div>
             </CardContent>
           </Card>

@@ -29,8 +29,6 @@ const SignIn = () => {
         password: data.password,
       })) as SignInResponseWithKeys;
 
-      console.log("SignIn result:", result);
-
       if (result?.error) {
         throw new Error(
           result.error === "CredentialsSignin"
@@ -52,8 +50,6 @@ const SignIn = () => {
       if (!session?.user) {
         throw new Error("User session not found. Please try logging in again.");
       }
-
-      console.log("User session:", session);
 
       const { encryptedPrivateKey, salt, nonce } = session.user;
 

@@ -10,10 +10,11 @@ import { useState, useRef } from "react";
 import { useUploadFile } from "@/helpers/uploadFile";
 import { X, Upload, File } from "lucide-react";
 import { ObjectId } from "bson";
-import { encryptCaseContentClient, generateAnonKeyPair } from "@/utils/client-content-encryption";
 import { generateCaseAccessKey } from "@/utils/keys";
 import { initSodium } from "@/lib/sodium";
 import { trpc } from "@/lib/trpc";
+import { encryptFile, ivToBase64 } from "@/utils/attachment-encrption";
+import { encryptCaseContent, generateAnonKeyPair } from "@/utils/content-encryption";
 
 interface CreateCaseFormProps {
   channel: {
@@ -134,10 +135,11 @@ export default function CreateCaseForm({ channel, accessCode, error }: CreateCas
     setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const uploadFilesOnSubmit = async () => {
+  const uploadFilesOnSubmit = async (aesKey: Uint8Array) => {
     if (selectedFiles.length === 0) return { uploadedFiles: [], caseId: null };
 
     setIsUploading(true);
+
     const uploadedFilesData = [];
 
     const caseObjectId = new ObjectId();
@@ -145,13 +147,18 @@ export default function CreateCaseForm({ channel, accessCode, error }: CreateCas
 
     try {
       for (const file of selectedFiles) {
-        const result = await uploadFile(file, caseId);
+        const { encrypted, iv } = await encryptFile(file, aesKey);
+        const ivBase64 =  ivToBase64(iv);
+        const encryptedBlob = new Blob([encrypted], { type: file.type });
+        const result = await uploadFile(encryptedBlob, caseId);
+
         if (result.success && result.storageKey) {
           uploadedFilesData.push({
             name: file.name,
             size: file.size,
             type: file.type,
             storageKey: result.storageKey,
+            iv: ivBase64,
           });
         } else {
           throw new Error(`Failed to upload "${file.name}"`);
@@ -186,6 +193,7 @@ export default function CreateCaseForm({ channel, accessCode, error }: CreateCas
     setIsSubmitting(true);
     try {
       const sodium = await initSodium();
+      const aesKey = sodium.crypto_aead_xchacha20poly1305_ietf_keygen();
       const keyPairResult = await generateAnonKeyPair();
       if (!keyPairResult) {
         throw new Error("Failed to generate encryption keys");
@@ -197,10 +205,11 @@ export default function CreateCaseForm({ channel, accessCode, error }: CreateCas
 
       const orgPublicKey = sodium.from_base64(orgKeyResult.publicKey);
 
-      const encryptionResult = await encryptCaseContentClient(
+      const encryptionResult = await encryptCaseContent(
         content,
         keyPairResult.publicKey,
-        orgPublicKey
+        orgPublicKey,
+        aesKey
       );
 
       if (!encryptionResult) {
@@ -214,7 +223,7 @@ export default function CreateCaseForm({ channel, accessCode, error }: CreateCas
       let caseId: string | null = null;
 
       if (selectedFiles.length > 0) {
-        const uploadResult = await uploadFilesOnSubmit();
+        const uploadResult = await uploadFilesOnSubmit(aesKey);
         filesData = uploadResult.uploadedFiles;
         caseId = uploadResult.caseId;
       }
@@ -231,17 +240,13 @@ export default function CreateCaseForm({ channel, accessCode, error }: CreateCas
       }
 
       const result = await createCase(formData);
-      
+
       if (result && result.success && result.caseId) {
-    
-        const properAccessKey = generateCaseAccessKey(
-          result.caseId,
-          anonPublicKey,
-          anonPrivateKey
-        );
-        
- 
-        window.location.href = `/c/${accessCode}/success?case_id=${result.caseId}&access_key=${encodeURIComponent(properAccessKey)}`;
+        const properAccessKey = generateCaseAccessKey(result.caseId, anonPublicKey, anonPrivateKey);
+
+        window.location.href = `/c/${accessCode}/success?case_id=${
+          result.caseId
+        }&access_key=${encodeURIComponent(properAccessKey)}`;
       } else if (result && !result.success && result.error) {
         throw new Error(result.error);
       } else {

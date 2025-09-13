@@ -16,7 +16,7 @@ export async function createCase(formData: FormData) {
     const accessCode = formData.get("access_code") as string;
     const attachmentsData = formData.get("attachments") as string;
     const preGeneratedCaseId = formData.get("caseId") as string;
- 
+
     const clientEncryptedContent = formData.get("encryptedContent") as string;
     const clientForAnonUser = formData.get("forAnonUser") as string;
     const clientForAdmin = formData.get("forAdmin") as string;
@@ -27,8 +27,9 @@ export async function createCase(formData: FormData) {
       size: number;
       type: string;
       storageKey: string;
+      iv: string;
     }> = [];
-    
+
     if (attachmentsData) {
       try {
         attachments = JSON.parse(attachmentsData);
@@ -53,10 +54,13 @@ export async function createCase(formData: FormData) {
       throw new Error(errorMessage);
     }
 
-    const isClientSideEncryption = clientEncryptedContent && clientForAnonUser && clientForAdmin && clientAnonPublicKey;
+    const isClientSideEncryption =
+      clientEncryptedContent && clientForAnonUser && clientForAdmin && clientAnonPublicKey;
 
     if (!isClientSideEncryption) {
-      throw new Error("Client-side encryption is required for security. Please refresh and try again.");
+      throw new Error(
+        "Client-side encryption is required for security. Please refresh and try again."
+      );
     }
 
     if (!clientEncryptedContent.includes(":")) {
@@ -80,11 +84,12 @@ export async function createCase(formData: FormData) {
     }
 
     let newCase;
-    
+
     if (preGeneratedCaseId) {
       newCase = new CaseModel({
         _id: new ObjectId(preGeneratedCaseId),
         channel_id: channel._id,
+        organization_id: organization._id,
         anon_public_key: clientAnonPublicKey,
         category: validatedData.category,
         content: clientEncryptedContent,
@@ -97,6 +102,7 @@ export async function createCase(formData: FormData) {
     } else {
       newCase = await CaseModel.create({
         channel_id: channel._id,
+        organization_id: organization._id,
         anon_public_key: clientAnonPublicKey,
         category: validatedData.category,
         content: clientEncryptedContent,
@@ -108,34 +114,36 @@ export async function createCase(formData: FormData) {
     }
 
     if (attachments.length > 0) {
-      const attachmentDocuments = attachments.map(attachment => ({
+      const attachmentDocuments = attachments.map((attachment) => ({
         case_id: newCase._id,
-        organization_id: channel.organization_id,
+        organization_id: channel.organization_id?._id,
+        iv: attachment.iv,
         file_name: attachment.name,
         storage_key: attachment.storageKey,
-        mime_type: attachment.type || 'application/octet-stream',
+        mime_type: attachment.type || "application/octet-stream",
         size: attachment.size,
-        uploaded_by: null,         uploaded_at: new Date(),
+        uploaded_by: null,
+        uploaded_at: new Date(),
       }));
 
-      await AttachmentModel.insertMany(attachmentDocuments);
+      await AttachmentModel.create(attachmentDocuments);
     }
 
     const caseId = String(newCase._id);
 
-    return { 
+    return {
       success: true,
       caseId: caseId,
-      accessCode: accessCode
+      accessCode: accessCode,
     };
-  }   catch (error) {
+  } catch (error) {
     console.error("Case creation error:", error);
-    
+
     if (error instanceof Error) {
       if (error.message.includes("NEXT_REDIRECT")) {
         throw error;
       }
-      
+
       const accessCode = formData.get("access_code") as string;
       return { success: false, error: error.message, accessCode };
     } else {

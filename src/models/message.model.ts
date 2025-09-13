@@ -5,6 +5,8 @@ export interface Message extends Document {
     sender_type: "ANONYMOUS" | "ADMIN";
     sender_id?: mongoose.Types.ObjectId | null;
     message: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 const messageSchema: Schema<Message> = new Schema(
@@ -26,7 +28,6 @@ const messageSchema: Schema<Message> = new Schema(
         },
         message: {
             type: String,
-            required: true,
             trim: true,
         },
     },

@@ -27,9 +27,7 @@ import { toast } from "sonner";
 
 export default function FormCreatorScreen() {
   const [activeTab, setActiveTab] = useState("overview");
-  const [isClient, setIsClient] = useState(false);
   const [generatedIdentifiers, setGeneratedIdentifiers] = useState<{
-    slug: string;
     access_code: string;
   } | null>(null);
   const [isGenerating, setIsGenerating] = useState(true);
@@ -38,10 +36,6 @@ export default function FormCreatorScreen() {
 
   const editChannelId = searchParams.get("id");
   const isEditMode = !!editChannelId;
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const { data: existingChannel, isLoading: isLoadingChannel } = trpc.channel.getById.useQuery(
     { id: editChannelId! },
@@ -58,7 +52,6 @@ export default function FormCreatorScreen() {
         "Thank you for your report. We have received your submission and will investigate accordingly.",
       primary_color: "#3b82f6",
       access_code: "",
-      slug: "",
       is_active: true,
     },
   });
@@ -75,7 +68,6 @@ export default function FormCreatorScreen() {
         submission_message: existingChannel.submission_message,
         primary_color: existingChannel.primary_color,
         access_code: existingChannel.access_code,
-        slug: existingChannel.slug,
         is_active: existingChannel.is_active,
       });
       setIsGenerating(false);
@@ -87,7 +79,6 @@ export default function FormCreatorScreen() {
       setGeneratedIdentifiers(generateIdentifiers.data);
       setIsGenerating(false);
 
-      form.setValue("slug", generateIdentifiers.data.slug);
       form.setValue("access_code", generateIdentifiers.data.access_code);
     }
   }, [generateIdentifiers.data, generatedIdentifiers, form, isEditMode]);
@@ -131,30 +122,12 @@ export default function FormCreatorScreen() {
       if (generatedIdentifiers) {
         const submitData = {
           ...data,
-          slug: generatedIdentifiers.slug,
           access_code: generatedIdentifiers.access_code,
         };
         createMutation.mutate(submitData);
       } else {
         toast.error("Please wait for identifiers to be generated");
       }
-    }
-  };
-
-  const handleCopyLink = () => {
-    if (isClient) {
-      let slug;
-      if (isEditMode && existingChannel) {
-        slug = existingChannel.slug;
-      } else if (generatedIdentifiers) {
-        slug = generatedIdentifiers.slug;
-      } else {
-        return;
-      }
-
-      const link = `${window.location.origin}/report/${slug}`;
-      navigator.clipboard.writeText(link);
-      toast.success("Form link copied to clipboard!");
     }
   };
 
@@ -236,70 +209,6 @@ export default function FormCreatorScreen() {
                           </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                          <FormField
-                            control={form.control}
-                            name="slug"
-                            render={() => (
-                              <FormItem>
-                                <FormLabel>Form URL</FormLabel>
-                                <FormControl>
-                                  <div className="space-y-2">
-                                    <div className="flex">
-                                      <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">
-                                        {isClient ? window.location.origin : "https://yoursite.com"}
-                                        /report/
-                                      </span>
-                                      <Input
-                                        placeholder="Generating..."
-                                        className="rounded-l-none bg-muted"
-                                        value={
-                                          isEditMode && existingChannel
-                                            ? existingChannel.slug
-                                            : generatedIdentifiers?.slug || ""
-                                        }
-                                        readOnly
-                                      />
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={handleCopyLink}
-                                        disabled={!generatedIdentifiers?.slug}
-                                        className="ml-2"
-                                      >
-                                        <Copy className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                    {/* Generation status */}
-                                    <div className="flex items-center gap-2 text-xs">
-                                      {isGenerating && (
-                                        <span className="text-muted-foreground">
-                                          Generating unique URL...
-                                        </span>
-                                      )}
-                                      {generatedIdentifiers && !isEditMode && (
-                                        <span className="text-green-600">
-                                          ✓ Unique URL generated
-                                        </span>
-                                      )}
-
-                                      {generateIdentifiers.error && !isEditMode && (
-                                        <span className="text-red-600">
-                                          ✗ Failed to generate URL
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                </FormControl>
-                                <FormDescription>
-                                  {isEditMode
-                                    ? "This is the unique URL for your channel."
-                                    : "This unique URL will be automatically generated for your channel."}
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
                           <FormField
                             control={form.control}
                             name="access_code"
@@ -393,23 +302,6 @@ export default function FormCreatorScreen() {
                                 </FormControl>
                                 <FormDescription>
                                   This color will be used for buttons and highlights
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="logo"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Logo URL (Optional)</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="https://example.com/logo.png" {...field} />
-                                </FormControl>
-                                <FormDescription>
-                                  Add your organization&apos;s logo to the channel header
                                 </FormDescription>
                                 <FormMessage />
                               </FormItem>

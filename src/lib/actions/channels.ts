@@ -17,7 +17,7 @@ export async function getChannels() {
     const channels = await Channel.find({
       organization_id: session.user.organization_id,
     })
-      .select("_id title description slug primary_color is_active")
+      .select("_id title description primary_color is_active")
       .lean();
 
     return channels.map((channel) => ({

@@ -6,11 +6,29 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { organizationSettingsSchema, userSettingsSchema, passwordSettingsSchema } from "@/schemas/settings.schema";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  organizationSettingsSchema,
+  userSettingsSchema,
+  passwordSettingsSchema,
+} from "@/schemas/settings.schema";
 import { trpc } from "@/lib/trpc";
 import { Loader2 } from "lucide-react";
 
@@ -81,7 +99,7 @@ const SettingsScreen = () => {
       organizationForm.reset({
         name: data.organization.name,
       });
-      
+
       userForm.reset({
         first_name: data.user.first_name,
         last_name: data.user.last_name,
@@ -103,8 +121,10 @@ const SettingsScreen = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+        </div>
       </div>
     );
   }
@@ -113,13 +133,11 @@ const SettingsScreen = () => {
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
-        <p className="text-muted-foreground">
-          Manage your account and organization settings
-        </p>
+        <p className="text-muted-foreground">Manage your account and organization settings</p>
       </div>
 
       <Tabs defaultValue="organization" className="space-y-4">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="organization">Organization</TabsTrigger>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="password">Password</TabsTrigger>
@@ -129,9 +147,7 @@ const SettingsScreen = () => {
           <Card>
             <CardHeader>
               <CardTitle>Organization Settings</CardTitle>
-              <CardDescription>
-                Update your organization details
-              </CardDescription>
+              <CardDescription>Update your organization details</CardDescription>
             </CardHeader>
             <Form {...organizationForm}>
               <form onSubmit={organizationForm.handleSubmit(onSubmitOrganization)}>
@@ -151,8 +167,9 @@ const SettingsScreen = () => {
                   />
                 </CardContent>
                 <CardFooter>
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
+                    className="my-4"
                     disabled={updateOrgMutation.isPending || !organizationForm.formState.isDirty}
                   >
                     {updateOrgMutation.isPending && (
@@ -170,9 +187,7 @@ const SettingsScreen = () => {
           <Card>
             <CardHeader>
               <CardTitle>Profile Settings</CardTitle>
-              <CardDescription>
-                Update your personal information
-              </CardDescription>
+              <CardDescription>Update your personal information</CardDescription>
             </CardHeader>
             <Form {...userForm}>
               <form onSubmit={userForm.handleSubmit(onSubmitUser)}>
@@ -205,17 +220,18 @@ const SettingsScreen = () => {
                       )}
                     />
                   </div>
-                  
+
                   {data?.user.email && (
                     <div className="pt-2">
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel className="mb-2">Email</FormLabel>
                       <Input value={data.user.email} disabled />
                     </div>
                   )}
                 </CardContent>
                 <CardFooter>
-                  <Button 
-                    type="submit" 
+                  <Button
+                    className="my-4"
+                    type="submit"
                     disabled={updateUserMutation.isPending || !userForm.formState.isDirty}
                   >
                     {updateUserMutation.isPending && (
@@ -233,9 +249,7 @@ const SettingsScreen = () => {
           <Card>
             <CardHeader>
               <CardTitle>Change Password</CardTitle>
-              <CardDescription>
-                Update your account password
-              </CardDescription>
+              <CardDescription>Update your account password</CardDescription>
             </CardHeader>
             <Form {...passwordForm}>
               <form onSubmit={passwordForm.handleSubmit(onSubmitPassword)}>
@@ -281,8 +295,9 @@ const SettingsScreen = () => {
                   />
                 </CardContent>
                 <CardFooter>
-                  <Button 
-                    type="submit" 
+                  <Button
+                    className="my-4"
+                    type="submit"
                     disabled={updatePasswordMutation.isPending || !passwordForm.formState.isDirty}
                   >
                     {updatePasswordMutation.isPending && (
