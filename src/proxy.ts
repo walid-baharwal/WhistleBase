@@ -6,7 +6,7 @@ export const config = {
   matcher: ["/dashboard/:path*", "/auth/sign-in", "/auth/sign-up", "/"],
 };
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const token = await getToken({ req: request });
   const url = request.nextUrl;
 
