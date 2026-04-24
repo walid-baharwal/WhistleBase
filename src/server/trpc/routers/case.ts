@@ -3,8 +3,11 @@ import { createTRPCRouter, publicProcedure, protectedProcedure } from "../contex
 import CaseModel from "@/models/case.model";
 import MessageModel from "@/models/message.model";
 import OrganizationModel from "@/models/organization.model";
+import UserModel from "@/models/user.model";
+import ChannelModel from "@/models/channel.model";
 import mongoose from "mongoose";
 import AttachmentModel from "@/models/attachment.model";
+import { sendNewMessageNotification } from "@/helpers/sendNewMessageNotification";
 
 export const caseRouter = createTRPCRouter({
   getCase: publicProcedure
@@ -174,6 +177,30 @@ export const caseRouter = createTRPCRouter({
             uploaded_at: new Date(),
           }))
         );
+      }
+
+      // Send email notification if message is from anonymous user
+      if (senderType === "ANONYMOUS") {
+        try {
+          const organization = await OrganizationModel.findById(caseData.organization_id);
+          const channel = await ChannelModel.findById(caseData.channel_id);
+          
+          if (organization && channel) {
+            const owner = await UserModel.findById(organization.owner);
+            if (owner && owner.email) {
+              await sendNewMessageNotification(
+                owner.email,
+                owner.first_name,
+                channel.title,
+                caseId,
+                caseData.category
+              );
+            }
+          }
+        } catch (emailError) {
+          console.error("Failed to send email notification for new message:", emailError);
+          // Don't fail the message creation if email fails
+        }
       }
 
       const messageDoc = newMessage as unknown as {

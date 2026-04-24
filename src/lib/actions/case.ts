@@ -5,8 +5,10 @@ import ChannelModel from "@/models/channel.model";
 import CaseModel from "@/models/case.model";
 import OrganizationModel from "@/models/organization.model";
 import AttachmentModel from "@/models/attachment.model";
+import UserModel from "@/models/user.model";
 import { createCaseSchema } from "@/schemas/case.schema";
 import { ObjectId } from "bson";
+import { sendNewCaseNotification } from "@/helpers/sendNewCaseNotification";
 
 export async function createCase(formData: FormData) {
   try {
@@ -130,6 +132,23 @@ export async function createCase(formData: FormData) {
     }
 
     const caseId = String(newCase._id);
+
+    // Send email notification to organization owner
+    try {
+      const owner = await UserModel.findById(organization.owner);
+      if (owner && owner.email) {
+        await sendNewCaseNotification(
+          owner.email,
+          owner.first_name,
+          channel.title,
+          caseId,
+          validatedData.category
+        );
+      }
+    } catch (emailError) {
+      console.error("Failed to send email notification:", emailError);
+      // Don't fail the case creation if email fails
+    }
 
     return {
       success: true,
