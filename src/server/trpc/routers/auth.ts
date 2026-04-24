@@ -6,7 +6,9 @@ import OrganizationModel from "@/models/organization.model";
 import EmailVerificationModel from "@/models/email_verification.model";
 
 import { sendVerificationEmail } from "@/helpers/sendVerificationEmail";
+import { sendPasswordResetEmail } from "@/helpers/sendPasswordResetEmail";
 import { verificationCodeSchema, organizationStepSchema } from "@/schemas/signUp.schema";
+import { requestPasswordResetSchema, verifyResetCodeSchema, resetPasswordSchema } from "@/schemas/passwordReset.schema";
 import OrganizationMemberModel from "@/models/organization_member.model";
 import { initSodiumServer } from "@/lib/sodium-server";
 
@@ -43,6 +45,7 @@ export const authRouter = createTRPCRouter({
         user_id: existingUser._id,
         token: verificationToken,
         expires_at: expiresAt,
+        type: "email_verification",
       });
       await newVerification.save();
     } else {
@@ -59,6 +62,7 @@ export const authRouter = createTRPCRouter({
         user_id: newUser._id,
         token: verificationToken,
         expires_at: expiresAt,
+        type: "email_verification",
       });
       await newVerification.save();
     }
@@ -268,6 +272,119 @@ export const authRouter = createTRPCRouter({
           name: organization.name,
           country: organization.country,
         },
+      };
+    }),
+
+  requestPasswordReset: publicProcedure
+    .input(requestPasswordResetSchema)
+    .mutation(async ({ input }) => {
+      const { email } = input;
+
+      const user = await UserModel.findOne({ email });
+      if (!user) {
+        // Don't reveal if user exists for security
+        return {
+          success: true,
+          message: "If an account exists with this email, you will receive a password reset code.",
+        };
+      }
+
+      if (!user.email_verified_at) {
+        throw new Error("Please verify your email before resetting your password");
+      }
+
+      const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 3600000); // 1 hour
+
+      // Delete any existing password reset tokens for this user
+      await EmailVerificationModel.deleteMany({
+        user_id: user._id,
+        type: "password_reset",
+      });
+
+      const newResetToken = new EmailVerificationModel({
+        user_id: user._id,
+        token: resetCode,
+        expires_at: expiresAt,
+        type: "password_reset",
+      });
+      await newResetToken.save();
+
+      const emailResponse = await sendPasswordResetEmail(email, user.first_name, resetCode);
+      if (!emailResponse.success) {
+        throw new Error(emailResponse.message);
+      }
+
+      return {
+        success: true,
+        message: "Password reset code sent to your email",
+      };
+    }),
+
+  verifyResetCode: publicProcedure
+    .input(verifyResetCodeSchema)
+    .mutation(async ({ input }) => {
+      const { email, reset_code } = input;
+
+      const user = await UserModel.findOne({ email });
+      if (!user) {
+        throw new Error("Invalid reset code");
+      }
+
+      const resetToken = await EmailVerificationModel.findOne({
+        user_id: user._id,
+        token: reset_code,
+        type: "password_reset",
+      });
+
+      if (!resetToken) {
+        throw new Error("Invalid reset code");
+      }
+
+      if (resetToken.expires_at < new Date()) {
+        throw new Error("Reset code has expired. Please request a new one.");
+      }
+
+      return {
+        success: true,
+        message: "Reset code verified successfully",
+      };
+    }),
+
+  resetPassword: publicProcedure
+    .input(resetPasswordSchema)
+    .mutation(async ({ input }) => {
+      const { email, reset_code, new_password } = input;
+
+      const user = await UserModel.findOne({ email });
+      if (!user) {
+        throw new Error("Invalid reset code");
+      }
+
+      const resetToken = await EmailVerificationModel.findOne({
+        user_id: user._id,
+        token: reset_code,
+        type: "password_reset",
+      });
+
+      if (!resetToken) {
+        throw new Error("Invalid reset code");
+      }
+
+      if (resetToken.expires_at < new Date()) {
+        throw new Error("Reset code has expired. Please request a new one.");
+      }
+
+      // Update password
+      user.password = new_password;
+      await user.save();
+
+      // Delete the reset token
+      await EmailVerificationModel.deleteOne({ _id: resetToken._id });
+
+      return {
+        success: true,
+        message: "Password reset successfully. You can now sign in with your new password.",
       };
     }),
 });
