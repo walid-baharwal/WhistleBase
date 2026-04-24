@@ -17,6 +17,7 @@ import { trpc } from "@/lib/trpc";
 import { base64ToIv, decryptFile, encryptFile, ivToBase64 } from "@/utils/attachment-encrption";
 import { useUploadFile } from "@/helpers/uploadFile";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 interface Attachment {
   _id: string;
@@ -62,7 +63,7 @@ export default function CaseViewPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { uploadFile } = useUploadFile();
 
-  const allowedExtensions = ["docx", "pdf", "csv", "jpeg", "jpg", "png", "webp"];
+  const allowedExtensions = ["docx", "pdf", "csv", "jpeg", "jpg", "png", "webp", "mp4", "mov", "avi", "webm"];
 
   const {
     data: caseData,
@@ -302,19 +303,19 @@ export default function CaseViewPage() {
     const filesArray = Array.from(files);
 
     if (selectedFiles.length + filesArray.length > 5) {
-      setError("Maximum 5 files allowed.");
+      toast.error("Maximum 5 files allowed");
       return;
     }
 
     for (const file of filesArray) {
       if (file.size > 5 * 1024 * 1024) {
-        setError(`File "${file.name}" is too large. Maximum size is 5MB.`);
+        toast.error(`File "${file.name}" is too large. Maximum size is 5MB`);
         return;
       }
 
       const fileExtension = file.name.split(".").pop()?.toLowerCase();
       if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
-        setError(
+        toast.error(
           `File "${file.name}" has an unsupported format. Allowed types: ${allowedExtensions.join(
             ", "
           )}`
@@ -664,7 +665,7 @@ export default function CaseViewPage() {
                       multiple
                       onChange={handleFileSelection}
                       className="hidden"
-                      accept=".docx,.pdf,.csv,.jpeg,.jpg,.png,.webp"
+                      accept=".docx,.pdf,.csv,.jpeg,.jpg,.png,.webp,.mp4,.mov,.avi,.webm"
                     />
                     <Button
                       type="button"
