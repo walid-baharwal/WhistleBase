@@ -45,6 +45,7 @@ export default function ForgotPasswordPage() {
     try {
       await requestResetMutation.mutateAsync(data);
       setEmail(data.email);
+      verifyForm.setValue("email", data.email);
       setStep("verify");
     } catch (error: unknown) {
       const err = error as { message?: string };
@@ -56,7 +57,9 @@ export default function ForgotPasswordPage() {
 
   const handleVerifyCode = async (data: z.infer<typeof verifyResetCodeSchema>) => {
     try {
-      await verifyCodeMutation.mutateAsync({ ...data, email });
+      await verifyCodeMutation.mutateAsync(data);
+      resetForm.setValue("email", data.email);
+      resetForm.setValue("reset_code", data.reset_code);
       setStep("reset");
     } catch (error: unknown) {
       const err = error as { message?: string };
@@ -68,11 +71,7 @@ export default function ForgotPasswordPage() {
 
   const handleResetPassword = async (data: z.infer<typeof resetPasswordSchema>) => {
     try {
-      await resetPasswordMutation.mutateAsync({
-        ...data,
-        email,
-        reset_code: verifyForm.getValues("reset_code"),
-      });
+      await resetPasswordMutation.mutateAsync(data);
       setStep("success");
     } catch (error: unknown) {
       const err = error as { message?: string };

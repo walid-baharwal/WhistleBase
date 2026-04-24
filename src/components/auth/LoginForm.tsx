@@ -76,7 +76,7 @@ export function LoginForm({
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex items-center">
+                    {/* <div className="flex items-center">
                       <Label htmlFor="password">Password</Label>
                       <Link
                         href="/auth/forgot-password"
@@ -84,7 +84,7 @@ export function LoginForm({
                       >
                         Forgot your password?
                       </Link>
-                    </div>
+                    </div> */}
                     <FormControl>
                       <InputPassword
                         id="password"
